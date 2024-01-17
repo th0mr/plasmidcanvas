@@ -1,0 +1,125 @@
+@startuml plasmid_canvas_arch
+skinparam linetype polyline
+skinparam linetype ortho
+skinparam nodesep 50
+skinparam ranksep 20
+
+' =============================================================================
+'  Abstract graph level
+class Graph {
+    
+    create_graph()
+    output_to_file()
+}
+
+class GraphObject {
+
+}
+
+Graph "1" *--right-- "0..*" GraphObject : plots
+
+' =============================================================================
+' Plasmid
+
+GraphObject <|-- Plasmid
+
+class Plasmid {
+    base_pairs : int
+    name : string
+    style : PlasmidStyle
+    circle_scaling : float
+    render()
+    add_feature()
+    add_restriction_site()
+}
+
+Plasmid "1" *-left- "0..*" Feature
+Plasmid "1" *-right- "1" PlasmidStyle
+
+class PlasmidStyle {
+    base_pair_label_interval : int
+    default_rectangle_style : FeatureStyle
+    default_circle_style : FeatureStyle
+    default_arrow_style : FeatureStyle
+    default_label_style : LabelStyle
+}
+
+' ============================================================================
+' Labelling
+
+class Label {
+    
+}
+
+LabelStyle "1" *-left- "1" Label
+
+class LabelStyle {
+    bold : boolean
+    italics : boolean
+    underlined : boolean
+}
+
+' =============================================================================
+' Abstract feature types
+
+GraphObject <|-- Feature
+
+class Feature {
+    render()
+    length()
+}
+
+Feature "1" *-left- "1" FeatureStyle
+Feature "1" *-- "1" Label
+
+Feature <|-- MultiPairFeature
+
+class MultiPairFeature {
+    start_pair : int
+    end_pair : int
+}
+
+Feature <|-- SinglePairFeature
+
+class SinglePairFeature {
+    base_pair_location : int
+}
+
+class FeatureStyle {
+    color : Color
+}
+
+' =============================================================================
+' Concrete multi pair feature types
+
+' Contains the logic for wrapping a rectangular type of feature around a circle
+class RectangleFeature {
+    render()
+}
+
+MultiPairFeature <|-- RectangleFeature
+
+class ArrowFeature {
+    render()
+}
+
+RectangleFeature <|-- ArrowFeature
+
+class CircleFeature {
+    radius: float
+    render()
+}
+
+MultiPairFeature <|-- CircleFeature
+
+' =============================================================================
+' Concrete single pair feature types
+
+
+SinglePairFeature <|-- RestrictionSiteFeature
+' Should restriction site spans be supported? i.e. 1000-1004
+class RestrictionSiteFeature {
+    
+}
+
+@enduml
