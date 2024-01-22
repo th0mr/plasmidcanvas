@@ -4,4 +4,4 @@ Note - This project is a work in progress that I am creating as part of my unive
 
 plasmidcanvas is a python package to facilitate the creation of simple plasmid maps for mock-ups and illustrations.
 
-(Expected) Features:
+work is being done on the develop branch
