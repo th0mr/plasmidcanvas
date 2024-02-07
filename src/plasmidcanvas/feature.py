@@ -14,19 +14,28 @@ def to_counter_clockwise(clockwise_angle):
 
 class Feature:
 
-    def __init__(self) -> None:
+    name: str
+
+    def __init__(self, name: str) -> None:
+        self.set_name(name)
+
+    def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         pass
 
-    def render(self, ax: Axes, p_total_base_pairs: int, p_center: tuple[float, float], p_radius: float, p_line_width: float) -> None:
-        pass
+    def get_name(self) -> str:
+        return self.name
+    
+    def set_name(self, name: str):
+        self.name = name
+    
 
 class MultiPairFeature(Feature):
 
     start_pair: int
     end_pair: int
 
-    def __init__(self, start_pair: int, end_pair: int)  -> None:
-        super().__init__()
+    def __init__(self, name: str, start_pair: int, end_pair: int)  -> None:
+        super().__init__(name)
         self.set_start_pairs(start_pair)
         self.set_end_pairs(end_pair)
 
@@ -49,8 +58,9 @@ class SinglePairFeature(Feature):
 
     base_pair: int
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, name: str, base_pair: int) -> None:
+        super().__init__(name)
+        self.set_base_pair(base_pair)
         
     def get_base_pair(self) -> int:
         return self.base_pair
@@ -63,36 +73,74 @@ class SinglePairFeature(Feature):
 
 class SinglePairLabel(SinglePairFeature):
     
-    DEFAULT_LINE_LENGTH_SF = 1.1
+    DEFAULT_LINE_LENGTH_SF: float = 1.2
+    DEFAULT_FONT_SIZE: int = 7
+    DEFAULT_LINE_ALPHA: float = 0.2
+    DEFAULT_LINE_COLOR: str = "black"
+
+    label_text: str = "UntitledLabel"
+    line_color: str = DEFAULT_LINE_COLOR
     
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, name: str, base_pair: int) -> None:
+        super().__init__(name=name, base_pair=base_pair)
+        self.set_label_text(self.get_name())
         
-    def render(self, ax: Axes, p_total_base_pairs: int, p_center: tuple[float, float], p_radius: float, p_line_width: float) -> None:
+    def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         
-        # IN PROGRESS!!!!
+        degrees = (self.get_base_pair() / p_total_base_pairs) * 360
+        radians = np.deg2rad(degrees)
         
-        # Calculate the x and y of the outer coordinates of the line
-        x = (p_radius + p_line_width * self.DEFAULT_LINE_LENGTH_SF) * np.cos(angles)
-        y = (p_radius + p_line_width * self.DEFAULT_LINE_LENGTH_SF) * np.sin(angles)
-        
-        ax.plot()
+        # Calculate the x and y of the inner coordinates of the line
+        start_xy = ((p_center[0] + p_radius) * np.sin(radians),
+                    (p_center[1] + p_radius) * np.cos(radians))
+
+        print(start_xy)
+
+        # To make the line for the label stick out farther we times by a scale factor to make the radius larger
+        end_xy = (((p_center[0] + p_radius + p_line_width) * self.DEFAULT_LINE_LENGTH_SF) * np.sin(radians),
+                  ((p_center[1] + p_radius + p_line_width) * self.DEFAULT_LINE_LENGTH_SF) * np.cos(radians))
+
+        print(end_xy)
+
+        print(f"degrees{degrees}")
+        align= "left" if (degrees <= 180) else "right"
+        print(f"align={align}")
+
+        ax.plot([start_xy[0], end_xy[0]], [start_xy[1], end_xy[1]], color=self.get_line_color(), alpha=self.DEFAULT_LINE_ALPHA)
+        ax.text(x=end_xy[0], y=end_xy[1], s=self.get_label_text(), fontsize=self.DEFAULT_FONT_SIZE, horizontalalignment=align, verticalalignment="center")
+
+    def set_label_text(self, label_text:str) -> None:
+        self.label_text = label_text
+
+    def get_label_text(self) -> str:
+        return self.label_text
+
+    # TODO - Should color be of colour type or just str?
+    def get_line_color(self) -> str:
+        return self.line_color
+
+    def set_line_color(self, line_color: str) -> None:
+        self.color = line_color
 
 # Currently just an alias for a SinglePairLabel
 class RestrictionSite(SinglePairLabel):
     
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, name:str , base_pair: int) -> None:
+        super().__init__(name, base_pair)
+        self.set_label_text(f"{self.get_name()} ({self.get_base_pair()})")
+
 
 class RectangleFeature(MultiPairFeature):
 
     # Center and radius for plotting the curved rectangle against plasmid circle
-    center: tuple[int]
+    #center
     radius: float
     
+    # TODO - Look at whether I should just be doing deg2rad instead of the moronic clockwise analogies
+
     line_width_scale_factor: float = 1
 
-    def render(self, ax: Axes, p_total_base_pairs: int, p_center: tuple[float, float], p_radius: float, p_line_width: float) -> None:
+    def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         # 1 - Work out angles from 12 o clock
         # theta1 is the angle from the start of the plasmid (0th bp) to the start of the plasmid
         twelve_to_start_angle = (self.get_start_pairs() / p_total_base_pairs) * 360
@@ -121,6 +169,15 @@ class RectangleFeature(MultiPairFeature):
         # 4 - Place the wedge
         rectangle = Wedge(center=p_center, r=r_radius, theta1=theta_1, theta2=theta_2, width=(p_line_width * self.line_width_scale_factor), label="blah testing")
         ax.add_patch(rectangle)
+
+        # Add a label
+        label_base_pair_location: int = round((self.get_start_pairs() + self.get_end_pairs()) / 2)
+        label_text = f"{self.get_name()} ({self.get_start_pairs()} - {self.get_end_pairs()})"
+        label = SinglePairLabel(label_text, label_base_pair_location)
+        # Set line color to the same as the feature colour
+        # TODO - MAKE THIS CHANGE
+        label.set_line_color("blue")
+        label.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
     
     def set_line_width_scale_factor(self, sf: float) -> None:
         self.line_width_scale_factor = sf
@@ -128,7 +185,10 @@ class RectangleFeature(MultiPairFeature):
 
 class ArrowFeature(RectangleFeature):
 
-    def render(self, ax: Axes, p_total_base_pairs: int, p_center: tuple[float, float], p_radius: float, p_line_width: float) -> None:
+    # TODO - Add direction
+    direction: int = 1
+
+    def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         super().render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
         # # # Triangle edges
         # # offset = p_line_width * 2

@@ -7,14 +7,14 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Circle, Wedge
 import numpy as np
 
-from feature import Feature, RectangleFeature, ArrowFeature
+from feature import Feature, RectangleFeature, ArrowFeature, RestrictionSite, SinglePairLabel
 
 
 
 class Plasmid:
 
     DEFAULT_CIRCLE_RADIUS: float = 1000
-    DEFAULT_CIRCLE_CENTER: tuple[float, float] = (0,0)
+    DEFAULT_CIRCLE_CENTER = (0,0)
     DEFAULT_PLASMID_LINE_WIDTH: float = DEFAULT_CIRCLE_RADIUS * 0.10
     DEFAULT_PLASMID_NAME: str = "Untitled Plasmid"
     DEFAULT_PLASMID_NUMBER_OF_MARKERS: int = 16
@@ -43,14 +43,22 @@ class Plasmid:
         # Create plot
         fig, ax = plt.subplots()
 
+        # Change figure height and width
+        fig.set_figheight(6)
+        fig.set_figwidth(6)
+        # Set dpi to print quality
+        fig.set_dpi(300)
+
         # Set x,y scaling to be equal
         ax.set_aspect('equal')
 
         # Place the plasmid circle onto the figure
         self.render(ax)
 
-        ax.set_xlim((-self.DEFAULT_CIRCLE_RADIUS * 1.5, self.DEFAULT_CIRCLE_RADIUS * 1.5))
-        ax.set_ylim((-self.DEFAULT_CIRCLE_RADIUS * 1.5, self.DEFAULT_CIRCLE_RADIUS * 1.5))
+        XY_SCALING_FACTOR = 1.6
+
+        ax.set_xlim((-self.DEFAULT_CIRCLE_RADIUS * XY_SCALING_FACTOR, self.DEFAULT_CIRCLE_RADIUS * XY_SCALING_FACTOR))
+        ax.set_ylim((-self.DEFAULT_CIRCLE_RADIUS * XY_SCALING_FACTOR, self.DEFAULT_CIRCLE_RADIUS * XY_SCALING_FACTOR))
         
         # Assemble a set of points to plot label markers around
         degrees_to_place_markers = np.linspace(0, 360, self.DEFAULT_PLASMID_NUMBER_OF_MARKERS, endpoint=False)
@@ -119,13 +127,56 @@ class PlasmidStyle:
         pass
 
 
-plasmid = Plasmid("MyPlasmid", 720)
+## TESTING
+    
 
-first_rect = RectangleFeature(100,200)
-first_rect.set_line_width_scale_factor(1)
-first_arrow = ArrowFeature(300,350)
+# Define a plasmid of X base pairs long, with a name
+plasmid = Plasmid("pBR322", 4361)
 
-plasmid.add_feature(first_rect)
-plasmid.add_feature(first_arrow)
+# Adding an arrow
+# for pBR322 this is TcR
+tcr = ArrowFeature("TcR", 86,1276)
+# Customise the thinkness of the line relative to the thickness of the plasmid circle
+tcr.set_line_width_scale_factor(1.0)
+plasmid.add_feature(tcr)
 
+# Add rop protein for pBR322
+rop = ArrowFeature("rop", 1915,2106)
+plasmid.add_feature(rop)
+
+# Add a rectangle, base of mobility for pBR322
+bom = RectangleFeature("bom", 2208,2348)
+plasmid.add_feature(bom)
+
+# Add ori
+# TODO - Change direction of this arrow to counter clockwise
+# TODO - Should this be done by f.setDirection or by providing a counter clockwise order to the constructor
+#        e.g. ArrowFeature(10, 1)
+ori = ArrowFeature("ori", 2534, 3122)
+plasmid.add_feature(ori)
+
+# Add ampr - technically this arrow should have a portion segmented for its signal sequence
+# TODO - This should be counter clockwise
+ampr = ArrowFeature("ampr", 3293, 4153)
+plasmid.add_feature(ampr)
+
+# Add ampr promoter as an arrow
+# TODO - This should be counter clockwise
+ampr_promoter = ArrowFeature("ampr promoter", 4154, 4258)
+plasmid.add_feature(ampr_promoter)
+
+restriction_site_1 = RestrictionSite("BamHI", 375)
+restriction_site_2 = RestrictionSite("BfuAI - BspMI", 1054)
+restriction_site_3 = RestrictionSite("Bpu10I", 1581)
+restriction_site_4 = RestrictionSite("AflIII - PciI", 2473)
+restriction_site_5 = RestrictionSite("AhdI", 3366)
+
+# Add the sites to the plasmid
+plasmid.add_feature(restriction_site_1)
+plasmid.add_feature(restriction_site_2)
+plasmid.add_feature(restriction_site_3)
+plasmid.add_feature(restriction_site_4)
+plasmid.add_feature(restriction_site_5)
+
+# Plot the plasmid
 plasmid.plot()
