@@ -82,7 +82,8 @@ class Plasmid:
         # TODO - Read this from PlasmidStyle
 
         # TODO - Figure out what colours a user can provide
-        plasmid_circle.set_color("orange")
+        plasmid_circle.set_color("grey")
+        plasmid_circle.set_alpha(0.5)
 
         # Make a horizontally aligned label in the center of the circle
         # Create bold plasmid name line and non-bold base pair line, using \bf math text
@@ -136,47 +137,47 @@ plasmid = Plasmid("pBR322", 4361)
 # Adding an arrow
 # for pBR322 this is TcR
 tcr = ArrowFeature("TcR", 86,1276)
-# Customise the thinkness of the line relative to the thickness of the plasmid circle
-tcr.set_line_width_scale_factor(1.0)
+# # Customise the thinkness of the line relative to the thickness of the plasmid circle
+# tcr.set_line_width_scale_factor(1.0)
 plasmid.add_feature(tcr)
 
 # Add rop protein for pBR322
 rop = ArrowFeature("rop", 1915,2106)
 plasmid.add_feature(rop)
 
-# Add a rectangle, base of mobility for pBR322
-bom = RectangleFeature("bom", 2208,2348)
-plasmid.add_feature(bom)
+# # Add a rectangle, base of mobility for pBR322
+# bom = RectangleFeature("bom", 2208,2348)
+# plasmid.add_feature(bom)
 
-# Add ori
-# TODO - Change direction of this arrow to counter clockwise
-# TODO - Should this be done by f.setDirection or by providing a counter clockwise order to the constructor
-#        e.g. ArrowFeature(10, 1)
-ori = ArrowFeature("ori", 2534, 3122)
-plasmid.add_feature(ori)
+# # Add ori
+# # TODO - Change direction of this arrow to counter clockwise
+# # TODO - Should this be done by f.setDirection or by providing a counter clockwise order to the constructor
+# #        e.g. ArrowFeature(10, 1)
+# ori = ArrowFeature("ori", 2534, 3122)
+# plasmid.add_feature(ori)
 
-# Add ampr - technically this arrow should have a portion segmented for its signal sequence
-# TODO - This should be counter clockwise
-ampr = ArrowFeature("ampr", 3293, 4153)
-plasmid.add_feature(ampr)
+# # Add ampr - technically this arrow should have a portion segmented for its signal sequence
+# # TODO - This should be counter clockwise
+# ampr = ArrowFeature("ampr", 3293, 4153)
+# plasmid.add_feature(ampr)
 
-# Add ampr promoter as an arrow
-# TODO - This should be counter clockwise
-ampr_promoter = ArrowFeature("ampr promoter", 4154, 4258)
-plasmid.add_feature(ampr_promoter)
+# # Add ampr promoter as an arrow
+# # TODO - This should be counter clockwise
+# ampr_promoter = ArrowFeature("ampr promoter", 4154, 4258)
+# plasmid.add_feature(ampr_promoter)
 
-restriction_site_1 = RestrictionSite("BamHI", 375)
-restriction_site_2 = RestrictionSite("BfuAI - BspMI", 1054)
-restriction_site_3 = RestrictionSite("Bpu10I", 1581)
-restriction_site_4 = RestrictionSite("AflIII - PciI", 2473)
-restriction_site_5 = RestrictionSite("AhdI", 3366)
+# restriction_site_1 = RestrictionSite("BamHI", 375)
+# restriction_site_2 = RestrictionSite("BfuAI - BspMI", 1054)
+# restriction_site_3 = RestrictionSite("Bpu10I", 1581)
+# restriction_site_4 = RestrictionSite("AflIII - PciI", 2473)
+# restriction_site_5 = RestrictionSite("AhdI", 3366)
 
-# Add the sites to the plasmid
-plasmid.add_feature(restriction_site_1)
-plasmid.add_feature(restriction_site_2)
-plasmid.add_feature(restriction_site_3)
-plasmid.add_feature(restriction_site_4)
-plasmid.add_feature(restriction_site_5)
+# # Add the sites to the plasmid
+# plasmid.add_feature(restriction_site_1)
+# plasmid.add_feature(restriction_site_2)
+# plasmid.add_feature(restriction_site_3)
+# plasmid.add_feature(restriction_site_4)
+# plasmid.add_feature(restriction_site_5)
 
 # Plot the plasmid
 plasmid.plot()

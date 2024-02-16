@@ -1,6 +1,8 @@
 from matplotlib.axes import Axes
-from matplotlib.patches import FancyArrowPatch, Polygon, Wedge
+from matplotlib.patches import FancyArrowPatch, Polygon, RegularPolygon, Wedge
 import numpy as np
+
+from plasmidcanvas.curvedtext import CurvedText
 
 # ==================================
 # Abstract Feature Classes
@@ -132,6 +134,9 @@ class RestrictionSite(SinglePairLabel):
 
 class RectangleFeature(MultiPairFeature):
 
+    SUPPORTED_LABEL_STYLES = ["on-circle", "off-circle", "inside-circle"]
+    label_style = ["on-circle"]
+
     # Center and radius for plotting the curved rectangle against plasmid circle
     #center
     radius: float
@@ -141,6 +146,10 @@ class RectangleFeature(MultiPairFeature):
     line_width_scale_factor: float = 1
 
     def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+        
+        # Creating a rectangle
+        # =============================================
+        
         # 1 - Work out angles from 12 o clock
         # theta1 is the angle from the start of the plasmid (0th bp) to the start of the plasmid
         twelve_to_start_angle = (self.get_start_pairs() / p_total_base_pairs) * 360
@@ -170,14 +179,29 @@ class RectangleFeature(MultiPairFeature):
         rectangle = Wedge(center=p_center, r=r_radius, theta1=theta_1, theta2=theta_2, width=(p_line_width * self.line_width_scale_factor), label="blah testing")
         ax.add_patch(rectangle)
 
-        # Add a label
-        label_base_pair_location: int = round((self.get_start_pairs() + self.get_end_pairs()) / 2)
-        label_text = f"{self.get_name()} ({self.get_start_pairs()} - {self.get_end_pairs()})"
-        label = SinglePairLabel(label_text, label_base_pair_location)
-        # Set line color to the same as the feature colour
-        # TODO - MAKE THIS CHANGE
-        label.set_line_color("blue")
-        label.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
+        # Labelling 
+        # ==================================================
+        
+        # Add all relevant label styles, removing duplicates
+        for style in  list(dict.fromkeys(self.label_style)):
+            if style not in self.SUPPORTED_LABEL_STYLES:
+                raise ValueError(f"{style} is not in the list of supported styles {self.SUPPORTED_LABEL_STYLES}")
+            
+            if style == "on-circle":
+                # Text must curve
+                curved_text = CurvedText()
+            
+            elif style == "off-circle":
+                # Add a label
+                label_base_pair_location: int = round((self.get_start_pairs() + self.get_end_pairs()) / 2)
+                label_text = f"{self.get_name()} ({self.get_start_pairs()} - {self.get_end_pairs()})"
+                label = SinglePairLabel(label_text, label_base_pair_location)
+                # Set line color to the same as the feature colour
+                # TODO - MAKE THIS CHANGE
+                label.set_line_color("blue")
+                label.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
+                
+        
     
     def set_line_width_scale_factor(self, sf: float) -> None:
         self.line_width_scale_factor = sf
@@ -190,65 +214,50 @@ class ArrowFeature(RectangleFeature):
 
     def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         super().render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
-        # # # Triangle edges
-        # # offset = p_line_width * 2
-        # # xcent  = p_center[0] - p_radius + (p_line_width*2)
-        # # print(f"xcent={xcent}")
-        # # left   = [xcent - offset, p_center[1]]
-        # # print(f"left={left}")
-        # # right  = [xcent + offset, p_center[1]]
-        # # print(f"right={right}")
-        # # bottom = [(left[0]+right[0])/2., p_center[1]-100]
-        # # print(f"bottom={bottom}")
-        # # arrow  = Polygon([left, right, bottom, left])
-        # # ax.add_patch(arrow)
         
-        # # 1 - Work out angles from 12 o clock
-        # # theta1 is the angle from the start of the plasmid (0th bp) to the start of the plasmid
-        # twelve_to_start_angle = (self.get_start_pairs() / p_total_base_pairs) * 360
-        # print(f"twelve_to_start_angle={twelve_to_start_angle}")
-        # # theta2 is the angle from the start of the feature to the end of the feature
-        # start_to_end_angle = twelve_to_start_angle + ((self.length() / p_total_base_pairs) * 360)
-        # print(f"start_to_end_angle={start_to_end_angle}")
+        # The angle from which the arrow will center at
+        angle = (self.get_end_pairs() / p_total_base_pairs) * 360
+        print(f"name={self.name}, angle={angle}")
         
-        # angle_radians_theta_1 = np.radians(twelve_to_start_angle)
-        # angle_radians_theta_2 = np.radians(start_to_end_angle)
-        # xy_theta_1 = (p_radius * np.sin(angle_radians_theta_1), p_radius * np.cos(angle_radians_theta_1))
-        # print(f"xy_theta_1={xy_theta_1}")
-        # xy_theta_2 = (p_radius * np.sin(angle_radians_theta_2), p_radius * np.cos(angle_radians_theta_2))
-        # print(f"xy_theta_2={xy_theta_2}")
+        radians = np.deg2rad(angle)
         
-        # # 3 - TODO - Adjust placement of the rectangle
-        # # For the rectangle to sit on top of the plasmid ring, the radius must be beyond 
-        # # the radius of the plasmid + half the plasmid circle width
-        # r_radius: float = p_radius
+        # the angle from the start of the plasmid (0th bp) to the start of the plasmid
+        twelve_to_start_angle = (self.get_start_pairs() / p_total_base_pairs) * 360
         
-        # # rwidth is the width of the rectangle, calculated by adding a scale factor to the width of the plasmid line
-        # r_width: float = p_radius
+        #  the angle from the start of the feature to the end of the feature
+        start_to_end_angle = twelve_to_start_angle + ((self.length() / p_total_base_pairs) * 360)
         
-        # # rectangle = Wedge(center=p_center, r=r_radius, theta1=theta_1, theta2=theta_2, width=p_line_width)
-        # # ax.add_patch(rectangle)
+        angle_radians_theta_1 = np.radians(twelve_to_start_angle)
+        angle_radians_theta_2 = np.radians(start_to_end_angle)
+        
+        #========Line
+        ## TRY CHANGE ANGLE TO 90
+        # arc = Arc(p_center,p_radius,p_radius,angle=angle,
+        #     theta1=0,theta2=angle_radians_theta_2,capstyle='round',linestyle='-',lw=10,color="black")
+        # ax.add_patch(arc)
 
-        # # TODO - Support on / off the circle placement by moving radius
-        # style = "Simple, tail_width=0.5, head_width=4, head_length=8"
-        # kw = dict(arrowstyle=style, color="k")
 
-        # arrow_patch: FancyArrowPatch = FancyArrowPatch(xy_theta_1,xy_theta_2, connectionstyle=f"arc3,rad=0.5", **kw)
-        # ax.add_patch(arrow_patch)
+        #========Create the arrow head
+        
+        endX=p_center[0]+(p_radius-(p_line_width/2))*np.sin(radians) #Do trig to determine end position
+        endY=p_center[1]+(p_radius-(p_line_width/2))*np.cos(radians)
 
-        # # 4 - Place the wedge
-        # # Triangle edges
-        # # offset = p_line_width * 2
-        # # xcent  = p_center[0] - p_radius + (p_line_width*2)
-        # # print(f"xcent={xcent}")
-        # # left   = [xy_theta_2[0], p_center[1]]
-        # # print(f"left={left}")
-        # # right  = [xcent + offset, p_center[1]]
-        # # print(f"right={right}")
-        # # bottom = [(left[0]+right[0])/2., p_center[1]-100]
-        # # print(f"bottom={bottom}")
-        # # arrow: Polygon  = Polygon([left, right, bottom, left])
-        # # ax.add_patch(arrow)
+        print(f"endX={endX}")
+        print(f"endY={endY}")
+
+        print(f"rotated at {np.radians(angle+angle_radians_theta_2)}")
+
+        ax.add_patch(                    #Create triangle as arrow head
+            RegularPolygon(
+                (endX, endY),            # (x,y)
+                3,                       # number of vertices
+                p_line_width/2,                # radius
+                np.radians(angle),     # orientation
+                color="black"
+            )
+        )
+        #ax.set_xlim([p_center[0]-p_radius,p_center[1]+p_radius]) and ax.set_ylim([p_center[0]-p_radius,p_center[1]+p_radius]) 
+        # Make sure you keep the axes scaled or else arrow will distort
 
 
 class CircleFeature(MultiPairFeature):
