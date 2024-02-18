@@ -31,10 +31,10 @@ class Plasmid:
         self.set_base_pairs(base_pairs)
         self.set_name(name)
 
-    def degrees_to_basepair(self, degree: float) -> int:
+    def _degrees_to_basepair(self, degree: float) -> int:
         return round((degree / 360) * self.base_pairs)
 
-    def basepair_to_degrees(self, basepair: int) -> float:
+    def _basepair_to_degrees(self, basepair: int) -> float:
         return (basepair / self.base_pairs) * 360
 
     def plot(self) -> None:
@@ -65,7 +65,7 @@ class Plasmid:
         for degree in degrees_to_place_markers:
             x,y = (self.DEFAULT_CIRCLE_CENTER[0] + self.DEFAULT_CIRCLE_RADIUS * self.DEFAULT_MARKER_DISTANCE_SF * np.sin(np.deg2rad(degree)), 
                    self.DEFAULT_CIRCLE_CENTER[1] + self.DEFAULT_CIRCLE_RADIUS * self.DEFAULT_MARKER_DISTANCE_SF * np.cos(np.deg2rad(degree)))
-            ax.text(x,y, s=f"{self.degrees_to_basepair(degree)}", horizontalalignment='center', fontstyle='italic', alpha=0.5, fontsize=7)
+            ax.text(x,y, s=f"{self._degrees_to_basepair(degree)}", horizontalalignment='center', fontstyle='italic', alpha=0.5, fontsize=7)
 
         # Add all features to the plasmid map by running their render() method
         for feature in self.get_features():
@@ -95,9 +95,6 @@ class Plasmid:
     def add_feature(self, feature: Feature) -> None:
         # TODO - Add checks to ensure a multi-span feature cannot be created that is "out of bounds"
         self.features.append(feature)
-
-    def add_restriction_site(self) -> None:
-        pass
 
     # ====== Getters + Setters =======
     

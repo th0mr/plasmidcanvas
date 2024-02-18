@@ -2,38 +2,23 @@
 skinparam linetype polyline
 skinparam linetype ortho
 skinparam nodesep 50
-skinparam ranksep 20
-
-' =============================================================================
-'  Abstract graph level
-class Graph {
-    
-    create_graph()
-    output_to_file()
-}
-
-class GraphObject {
-
-}
-
-Graph "1" *--right-- "0..*" GraphObject : plots
+skinparam ranksep 50
 
 ' =============================================================================
 ' Plasmid
 
-GraphObject <|-- Plasmid
 
 class Plasmid {
     base_pairs : int
     name : string
-    style : PlasmidStyle
     circle_scaling : float
+    plot()
     render()
     add_feature()
-    add_restriction_site()
+    save_to_file()
 }
 
-Plasmid "1" *-left- "0..*" Feature
+Plasmid "1" *-down- "0..*" Feature
 Plasmid "1" *-right- "1" PlasmidStyle
 
 class PlasmidStyle {
@@ -48,29 +33,35 @@ class PlasmidStyle {
 ' Labelling
 
 class Label {
-    
+    label_text  : str
+    render()
 }
 
-LabelStyle "1" *-left- "1" Label
+Label "1" *-left- "1" LabelStyle
+FeatureStyle <-down- LabelStyle
+
 
 class LabelStyle {
     bold : boolean
     italics : boolean
     underlined : boolean
+    line_color : Color
+    line_alpha : Color
+    font_size : int
+    font_color : Color
 }
 
 ' =============================================================================
 ' Abstract feature types
 
-GraphObject <|-- Feature
-
 class Feature {
+    name: str
     render()
     length()
 }
 
 Feature "1" *-left- "1" FeatureStyle
-Feature "1" *-- "1" Label
+Feature "1" *- "1" Label
 
 Feature <|-- MultiPairFeature
 
@@ -84,6 +75,8 @@ Feature <|-- SinglePairFeature
 class SinglePairFeature {
     base_pair_location : int
 }
+
+SinglePairFeature <-down- Label
 
 class FeatureStyle {
     color : Color
@@ -116,10 +109,10 @@ MultiPairFeature <|-- CircleFeature
 ' Concrete single pair feature types
 
 
-SinglePairFeature <|-- RestrictionSiteFeature
+Label <|-- RestrictionSiteFeature
 ' Should restriction site spans be supported? i.e. 1000-1004
 class RestrictionSiteFeature {
-    
+    render()
 }
 
 @enduml
