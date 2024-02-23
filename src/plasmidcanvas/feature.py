@@ -2,7 +2,7 @@ from matplotlib.axes import Axes
 from matplotlib.patches import FancyArrowPatch, Polygon, RegularPolygon, Wedge
 import numpy as np
 
-from plasmidcanvas.curvedtext import CurvedText
+#from plasmidcanvas.curvedtext import CurvedText
 
 # ==================================
 # Abstract Feature Classes
@@ -77,11 +77,14 @@ class SinglePairLabel(SinglePairFeature):
     
     DEFAULT_LINE_LENGTH_SF: float = 1.2
     DEFAULT_FONT_SIZE: int = 7
+    DEFAULT_FONT_COLOR: str = "black"
     DEFAULT_LINE_ALPHA: float = 0.2
     DEFAULT_LINE_COLOR: str = "black"
 
+    line_length_sf: float = DEFAULT_LINE_LENGTH_SF
     label_text: str = "UntitledLabel"
     line_color: str = DEFAULT_LINE_COLOR
+    font_color: str = DEFAULT_FONT_COLOR
     
     def __init__(self, name: str, base_pair: int) -> None:
         super().__init__(name=name, base_pair=base_pair)
@@ -99,8 +102,8 @@ class SinglePairLabel(SinglePairFeature):
         print(start_xy)
 
         # To make the line for the label stick out farther we times by a scale factor to make the radius larger
-        end_xy = (((p_center[0] + p_radius + p_line_width) * self.DEFAULT_LINE_LENGTH_SF) * np.sin(radians),
-                  ((p_center[1] + p_radius + p_line_width) * self.DEFAULT_LINE_LENGTH_SF) * np.cos(radians))
+        end_xy = (((p_center[0] + p_radius + p_line_width) * self.line_length_sf) * np.sin(radians),
+                  ((p_center[1] + p_radius + p_line_width) * self.line_length_sf) * np.cos(radians))
 
         print(end_xy)
 
@@ -109,7 +112,7 @@ class SinglePairLabel(SinglePairFeature):
         print(f"align={align}")
 
         ax.plot([start_xy[0], end_xy[0]], [start_xy[1], end_xy[1]], color=self.get_line_color(), alpha=self.DEFAULT_LINE_ALPHA)
-        ax.text(x=end_xy[0], y=end_xy[1], s=self.get_label_text(), fontsize=self.DEFAULT_FONT_SIZE, horizontalalignment=align, verticalalignment="center")
+        ax.text(x=end_xy[0], y=end_xy[1], s=self.get_label_text(), fontsize=self.DEFAULT_FONT_SIZE, color=self.font_color, horizontalalignment=align, verticalalignment="center")
 
     def set_label_text(self, label_text:str) -> None:
         self.label_text = label_text
@@ -117,12 +120,17 @@ class SinglePairLabel(SinglePairFeature):
     def get_label_text(self) -> str:
         return self.label_text
 
-    # TODO - Should color be of colour type or just str?
     def get_line_color(self) -> str:
         return self.line_color
 
     def set_line_color(self, line_color: str) -> None:
-        self.color = line_color
+        self.line_color = line_color
+        
+    def get_font_color(self) -> str:
+        return self.font_color
+
+    def set_font_color(self, font_color: str) -> None:
+        self.font_color = font_color
 
 # Currently just an alias for a SinglePairLabel
 class RestrictionSite(SinglePairLabel):
@@ -134,8 +142,12 @@ class RestrictionSite(SinglePairLabel):
 
 class RectangleFeature(MultiPairFeature):
 
+    DEFAULT_COLOR: str = "#069AF3"
+    
     SUPPORTED_LABEL_STYLES = ["on-circle", "off-circle", "inside-circle"]
-    label_style = ["on-circle"]
+    label_style = ["off-circle"]
+    
+    color: str = DEFAULT_COLOR
 
     # Center and radius for plotting the curved rectangle against plasmid circle
     #center
@@ -176,7 +188,7 @@ class RectangleFeature(MultiPairFeature):
         # TODO - Support on / off the circle placement by moving radius
 
         # 4 - Place the wedge
-        rectangle = Wedge(center=p_center, r=r_radius, theta1=theta_1, theta2=theta_2, width=(p_line_width * self.line_width_scale_factor), label="blah testing")
+        rectangle = Wedge(center=p_center, r=r_radius, theta1=theta_1, theta2=theta_2, width=(p_line_width * self.line_width_scale_factor), label="blah testing", color=self.color)
         ax.add_patch(rectangle)
 
         # Labelling 
@@ -189,16 +201,20 @@ class RectangleFeature(MultiPairFeature):
             
             if style == "on-circle":
                 # Text must curve
-                curved_text = CurvedText()
+                curved_text = "TODO DO SOMETHING"
             
             elif style == "off-circle":
                 # Add a label
+                
                 label_base_pair_location: int = round((self.get_start_pairs() + self.get_end_pairs()) / 2)
                 label_text = f"{self.get_name()} ({self.get_start_pairs()} - {self.get_end_pairs()})"
                 label = SinglePairLabel(label_text, label_base_pair_location)
+                # TODO - MAKING LABEL LINE LENGTH SF TIMES BY 0.5 MAKES THEM GO IN
+                #label.line_length_sf=label.line_length_sf * 0.5
                 # Set line color to the same as the feature colour
                 # TODO - MAKE THIS CHANGE
-                label.set_line_color("blue")
+                label.set_line_color(self.color)
+                label.set_font_color(self.color)
                 label.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
                 
         
@@ -206,6 +222,11 @@ class RectangleFeature(MultiPairFeature):
     def set_line_width_scale_factor(self, sf: float) -> None:
         self.line_width_scale_factor = sf
         
+    def get_color(self) -> str:
+        return self.color
+
+    def set_color(self, color: str) -> None:
+        self.color = color
 
 class ArrowFeature(RectangleFeature):
 
@@ -247,15 +268,15 @@ class ArrowFeature(RectangleFeature):
 
         print(f"rotated at {np.radians(angle+angle_radians_theta_2)}")
 
-        ax.add_patch(                    #Create triangle as arrow head
-            RegularPolygon(
-                (endX, endY),            # (x,y)
-                3,                       # number of vertices
-                p_line_width/2,                # radius
-                np.radians(angle),     # orientation
-                color="black"
-            )
-        )
+        # ax.add_patch(                    #Create triangle as arrow head
+        #     RegularPolygon(
+        #         (endX, endY),            # (x,y)
+        #         3,                       # number of vertices
+        #         p_line_width/2,                # radius
+        #         np.radians(angle),     # orientation
+        #         color="black"
+        #     )
+        # )
         #ax.set_xlim([p_center[0]-p_radius,p_center[1]+p_radius]) and ax.set_ylim([p_center[0]-p_radius,p_center[1]+p_radius]) 
         # Make sure you keep the axes scaled or else arrow will distort
 
