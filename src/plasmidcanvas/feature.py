@@ -2,6 +2,8 @@ from matplotlib.axes import Axes
 from matplotlib.patches import FancyArrowPatch, Polygon, RegularPolygon, Wedge
 import numpy as np
 
+from curvedtext import CurvedText
+
 #from plasmidcanvas.curvedtext import CurvedText
 
 # ==================================
@@ -16,7 +18,10 @@ def to_counter_clockwise(clockwise_angle):
 
 class Feature:
 
+    DEFAULT_COLOR: str = "#069AF3"
+
     name: str
+    color: str = DEFAULT_COLOR
 
     def __init__(self, name: str) -> None:
         self.set_name(name)
@@ -29,12 +34,21 @@ class Feature:
     
     def set_name(self, name: str):
         self.name = name
+
+    def get_color(self) -> str:
+        return self.color
+
+    def set_color(self, color: str) -> None:
+        self.color = color
     
 
 class MultiPairFeature(Feature):
 
     start_pair: int
     end_pair: int
+    
+    # Used for positioning overlapping MultiPairFeatures into orbits for overlaps
+    _orbit: int = 0
 
     def __init__(self, name: str, start_pair: int, end_pair: int)  -> None:
         super().__init__(name)
@@ -42,19 +56,25 @@ class MultiPairFeature(Feature):
         self.set_end_pairs(end_pair)
 
     def length(self) -> int:
-        return self.get_end_pairs() - self.get_start_pairs()
+        return self.get_end_pair() - self.get_start_pair()
 
-    def get_start_pairs(self) -> int:
+    def get_start_pair(self) -> int:
         return self.start_pair
 
     def set_start_pairs(self, start_pair) -> None:
         self.start_pair = start_pair
 
-    def get_end_pairs(self) -> int:
+    def get_end_pair(self) -> int:
         return self.end_pair
 
     def set_end_pairs(self, end_pair) -> None:
         self.end_pair = end_pair
+
+    def get_orbit(self) -> int:
+        return self._orbit
+    
+    def set_orbit(self, orbit: int) -> None:
+        self._orbit = orbit
 
 class SinglePairFeature(Feature):
 
@@ -73,22 +93,51 @@ class SinglePairFeature(Feature):
 # ==================================
 # Concrete Feature Classes
 
-class SinglePairLabel(SinglePairFeature):
-    
-    DEFAULT_LINE_LENGTH_SF: float = 1.2
+class LabelBase():
     DEFAULT_FONT_SIZE: int = 7
     DEFAULT_FONT_COLOR: str = "black"
+
+    label_text: str = "UntitledLabel"
+    font_color: str = DEFAULT_FONT_COLOR
+    font_size: int = DEFAULT_FONT_SIZE
+
+    def __init__(self, name: str) -> None:
+        self.set_label_text(self.get_name())
+
+    def get_font_color(self) -> str:
+        return self.font_color
+
+    def set_font_color(self, font_color: str) -> None:
+        self.font_color = font_color
+
+    def set_label_text(self, label_text:str) -> None:
+        self.label_text = label_text
+
+    def get_label_text(self) -> str:
+        return self.label_text
+    
+    def get_font_size(self) -> int:
+        return self.font_size
+    
+    def set_font_size(self, font_size: int) -> None:
+        if font_size > 0:
+            self.font_size = font_size
+        else:
+            raise ValueError(f"Font size cannot be negative")
+
+
+class SinglePairLabel(SinglePairFeature, LabelBase):
+    
+    DEFAULT_LINE_LENGTH_SF: float = 1.2
     DEFAULT_LINE_ALPHA: float = 0.2
     DEFAULT_LINE_COLOR: str = "black"
 
     line_length_sf: float = DEFAULT_LINE_LENGTH_SF
-    label_text: str = "UntitledLabel"
     line_color: str = DEFAULT_LINE_COLOR
-    font_color: str = DEFAULT_FONT_COLOR
     
     def __init__(self, name: str, base_pair: int) -> None:
         super().__init__(name=name, base_pair=base_pair)
-        self.set_label_text(self.get_name())
+        LabelBase.__init__(self, name)
         
     def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         
@@ -99,38 +148,22 @@ class SinglePairLabel(SinglePairFeature):
         start_xy = ((p_center[0] + p_radius) * np.sin(radians),
                     (p_center[1] + p_radius) * np.cos(radians))
 
-        print(start_xy)
 
         # To make the line for the label stick out farther we times by a scale factor to make the radius larger
         end_xy = (((p_center[0] + p_radius + p_line_width) * self.line_length_sf) * np.sin(radians),
                   ((p_center[1] + p_radius + p_line_width) * self.line_length_sf) * np.cos(radians))
 
-        print(end_xy)
-
-        print(f"degrees{degrees}")
         align= "left" if (degrees <= 180) else "right"
-        print(f"align={align}")
 
         ax.plot([start_xy[0], end_xy[0]], [start_xy[1], end_xy[1]], color=self.get_line_color(), alpha=self.DEFAULT_LINE_ALPHA)
         ax.text(x=end_xy[0], y=end_xy[1], s=self.get_label_text(), fontsize=self.DEFAULT_FONT_SIZE, color=self.font_color, horizontalalignment=align, verticalalignment="center")
-
-    def set_label_text(self, label_text:str) -> None:
-        self.label_text = label_text
-
-    def get_label_text(self) -> str:
-        return self.label_text
 
     def get_line_color(self) -> str:
         return self.line_color
 
     def set_line_color(self, line_color: str) -> None:
         self.line_color = line_color
-        
-    def get_font_color(self) -> str:
-        return self.font_color
 
-    def set_font_color(self, font_color: str) -> None:
-        self.font_color = font_color
 
 # Currently just an alias for a SinglePairLabel
 class RestrictionSite(SinglePairLabel):
@@ -139,21 +172,47 @@ class RestrictionSite(SinglePairLabel):
         super().__init__(name, base_pair)
         self.set_label_text(f"{self.get_name()} ({self.get_base_pair()})")
 
+class CurvedMultiPairLabel(MultiPairFeature, LabelBase):
+
+    def __init__(self, name: str, start_pair: int, end_pair: int) -> None:
+        super().__init__(name, start_pair, end_pair)
+        LabelBase.__init__(self, name)
+
+    def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+
+        start_radians = np.deg2rad((self.get_start_pair() / p_total_base_pairs) * 360)
+        end_radians   = np.deg2rad((self.get_end_pair() / p_total_base_pairs) * 360)
+
+        print(f"start_radians = {start_radians}")
+        print(f"end_radians = {end_radians}")
+
+        # SWAP SIN AND COS TO MAKE IT WORK FOR TOP RIGHT QUADRANT
+
+        curve = [np.cos(np.linspace(start_radians, end_radians)),
+                 np.sin(np.linspace(start_radians, end_radians))]
+
+        scaled_curve = [[x * (p_center[0] + p_radius) for x in curve[0]],
+                        [y * (p_center[1] + p_radius) for y in curve[1]]]
+
+        ax.plot(scaled_curve, color='b')
+
+        CurvedText(
+            x = scaled_curve[0],
+            y = scaled_curve[1],
+            text = self.get_label_text(),
+            va = 'bottom',
+            axes = ax,   # This calls ax.add_artist, no need to add it
+            fontsize = self.get_font_size()
+        )
 
 class RectangleFeature(MultiPairFeature):
-
-    DEFAULT_COLOR: str = "#069AF3"
     
     SUPPORTED_LABEL_STYLES = ["on-circle", "off-circle", "inside-circle"]
     label_style = ["off-circle"]
-    
-    color: str = DEFAULT_COLOR
 
     # Center and radius for plotting the curved rectangle against plasmid circle
     #center
     radius: float
-    
-    # TODO - Look at whether I should just be doing deg2rad instead of the moronic clockwise analogies
 
     line_width_scale_factor: float = 1
 
@@ -164,26 +223,19 @@ class RectangleFeature(MultiPairFeature):
         
         # 1 - Work out angles from 12 o clock
         # theta1 is the angle from the start of the plasmid (0th bp) to the start of the plasmid
-        twelve_to_start_angle = (self.get_start_pairs() / p_total_base_pairs) * 360
-        print(f"twelve_to_start_angle={twelve_to_start_angle}")
+        start_angle = (self.get_start_pair() / p_total_base_pairs) * 360
         # theta2 is the angle from the start of the feature to the end of the feature
-        start_to_end_angle = twelve_to_start_angle + ((self.length() / p_total_base_pairs) * 360)
-        print(f"start_to_end_angle={start_to_end_angle}")
+        start_to_end_angle = start_angle + ((self.length() / p_total_base_pairs) * 360)
 
         # 2 - Convert angles starting from 12oclock clockwise into ones starting from 3oclock counterclockwise
         # Span from end to start to reverse the normal counterclockwise behaviour of matplotlib when
         theta_1=to_counter_clockwise(start_to_end_angle)
-        print(f"theta_1={theta_1}")
-        theta_2=to_counter_clockwise(twelve_to_start_angle)
-        print(f"theta_2={theta_2}")
+        theta_2=to_counter_clockwise(start_angle)
 
         # 3 - TODO - Adjust placement of the rectangle
         # For the rectangle to sit on top of the plasmid ring, the radius must be beyond 
         # the radius of the plasmid + half the plasmid circle width
         r_radius: float = p_radius
-        
-        # rwidth is the width of the rectangle, calculated by adding a scale factor to the width of the plasmid line
-        r_width: float = p_radius
 
         # TODO - Support on / off the circle placement by moving radius
 
@@ -206,8 +258,8 @@ class RectangleFeature(MultiPairFeature):
             elif style == "off-circle":
                 # Add a label
                 
-                label_base_pair_location: int = round((self.get_start_pairs() + self.get_end_pairs()) / 2)
-                label_text = f"{self.get_name()} ({self.get_start_pairs()} - {self.get_end_pairs()})"
+                label_base_pair_location: int = round((self.get_start_pair() + self.get_end_pair()) / 2)
+                label_text = f"{self.get_name()} ({self.get_start_pair()} - {self.get_end_pair()})"
                 label = SinglePairLabel(label_text, label_base_pair_location)
                 # TODO - MAKING LABEL LINE LENGTH SF TIMES BY 0.5 MAKES THEM GO IN
                 #label.line_length_sf=label.line_length_sf * 0.5
@@ -221,64 +273,92 @@ class RectangleFeature(MultiPairFeature):
     
     def set_line_width_scale_factor(self, sf: float) -> None:
         self.line_width_scale_factor = sf
-        
-    def get_color(self) -> str:
-        return self.color
 
-    def set_color(self, color: str) -> None:
-        self.color = color
+class DirectionalMultiPairFeature(MultiPairFeature):
 
-class ArrowFeature(RectangleFeature):
-
-    # TODO - Add direction
     direction: int = 1
 
+    def __init__(self, name: str, start_pair: int, end_pair: int, direction: int = 1):
+        super().__init__(name, start_pair, end_pair)
+        self.set_direction(direction)
+
+    def get_direction(self) -> int:
+        return self.direction
+    
+    def set_direction(self, direction: int) -> None:
+        if direction not in [1, -1]:
+            raise ValueError(f"{direction} is an invalid direction value. Direction can only be 1 (clockwise) or -1 (anti-clockwise)")
+        self.direction = direction
+
+class ArrowFeature(DirectionalMultiPairFeature):    
+
     def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
-        super().render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
+              
+        # NOTE - To clarify the mentions of "start" and "end" of an arrow
+        # This side of the arrow is the "end" <| This side is the "start"
+
+        #======== Determine the length of the arrow head ======
         
-        # The angle from which the arrow will center at
-        angle = (self.get_end_pairs() / p_total_base_pairs) * 360
-        print(f"name={self.name}, angle={angle}")
-        
-        radians = np.deg2rad(angle)
-        
-        # the angle from the start of the plasmid (0th bp) to the start of the plasmid
-        twelve_to_start_angle = (self.get_start_pairs() / p_total_base_pairs) * 360
-        
-        #  the angle from the start of the feature to the end of the feature
-        start_to_end_angle = twelve_to_start_angle + ((self.length() / p_total_base_pairs) * 360)
-        
-        angle_radians_theta_1 = np.radians(twelve_to_start_angle)
-        angle_radians_theta_2 = np.radians(start_to_end_angle)
-        
-        #========Line
-        ## TRY CHANGE ANGLE TO 90
-        # arc = Arc(p_center,p_radius,p_radius,angle=angle,
-        #     theta1=0,theta2=angle_radians_theta_2,capstyle='round',linestyle='-',lw=10,color="black")
-        # ax.add_patch(arc)
+        # The arrow head takes up 50% of the feature, up to a maximum of 1.5% total size of the plasmid
+        # This avoids distortion if the arrows are too long, but allows smaller features to still have
+        # a visable arrow
+        MAX_PERCENT_AS_ARROW_HEAD = 0.50
+        ARROW_LENGTH_CAP = p_total_base_pairs * 0.015
+        max_arrow_length = self.length() * MAX_PERCENT_AS_ARROW_HEAD
+        length_of_arrow_head = max_arrow_length if max_arrow_length < ARROW_LENGTH_CAP else ARROW_LENGTH_CAP        
 
 
-        #========Create the arrow head
+        #======= Determining the arrow start and end ========
+
+        # If direction is clockwise (1) then set the arrowhead to be made on the end of the feature
+        if self.get_direction() == 1:
+            arrow_start_base_pair = self.get_end_pair() - length_of_arrow_head
+            arrow_end_base_pair = self.get_end_pair()
+        # If direction is counter-clockwise (-1) then set the arrowhead to be made at the start of the feature
+        elif self.get_direction() == -1:
+            arrow_start_base_pair = self.get_start_pair() + length_of_arrow_head
+            arrow_end_base_pair = self.get_start_pair()
+        else:
+            raise ValueError(f"direction={self.get_direction()} is invalid")
+    
+        # Can be a float value
+        angle_of_arrow_start = (arrow_start_base_pair / p_total_base_pairs) * 360
+        angle_of_arrow_start_radians = np.deg2rad(angle_of_arrow_start)
+        angle_of_end_of_arrow = (arrow_end_base_pair / p_total_base_pairs) * 360
+        angle_of_arrow_end_radians = np.deg2rad(angle_of_end_of_arrow)
+
+        #======== Work out three points to assemble the traingle =======
+
+        triangle_front_xy = ((p_center[0]+p_radius-(p_line_width/2))*np.sin(angle_of_arrow_end_radians),
+                             (p_center[1]+p_radius-(p_line_width/2))*np.cos(angle_of_arrow_end_radians))
         
-        endX=p_center[0]+(p_radius-(p_line_width/2))*np.sin(radians) #Do trig to determine end position
-        endY=p_center[1]+(p_radius-(p_line_width/2))*np.cos(radians)
+        triangle_point_inner_circle_xy = ((p_center[0]+p_radius-p_line_width)*np.sin(angle_of_arrow_start_radians),
+                                          (p_center[1]+p_radius-p_line_width)*np.cos(angle_of_arrow_start_radians))
+        
+        triangle_point_outer_circle_xy = ((p_center[0]+p_radius)*np.sin(angle_of_arrow_start_radians),
+                                          (p_center[1]+p_radius)*np.cos(angle_of_arrow_start_radians))
 
-        print(f"endX={endX}")
-        print(f"endY={endY}")
+        triangle_points = [triangle_front_xy, triangle_point_inner_circle_xy, triangle_point_outer_circle_xy]
 
-        print(f"rotated at {np.radians(angle+angle_radians_theta_2)}")
+        # ======== Create the triangle and rectangle to make a curved arrow =======
 
-        # ax.add_patch(                    #Create triangle as arrow head
-        #     RegularPolygon(
-        #         (endX, endY),            # (x,y)
-        #         3,                       # number of vertices
-        #         p_line_width/2,                # radius
-        #         np.radians(angle),     # orientation
-        #         color="black"
-        #     )
-        # )
-        #ax.set_xlim([p_center[0]-p_radius,p_center[1]+p_radius]) and ax.set_ylim([p_center[0]-p_radius,p_center[1]+p_radius]) 
-        # Make sure you keep the axes scaled or else arrow will distort
+        ax.add_patch(                    #Create triangle as arrow head
+            Polygon(
+                xy=triangle_points,            # (x,y) values
+                color=self.get_color()
+            )
+        )
+
+        if self.get_direction() == 1:
+            rectangle_start_pair = self.get_start_pair()
+            rectangle_end_pair = int(arrow_start_base_pair)
+        elif self.get_direction() == -1:
+            rectangle_start_pair = int (arrow_start_base_pair)
+            rectangle_end_pair = self.get_end_pair()
+            
+        rectangle = RectangleFeature(self.name, rectangle_start_pair, rectangle_end_pair)
+        rectangle.set_color(self.get_color())
+        rectangle.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
 
 
 class CircleFeature(MultiPairFeature):
