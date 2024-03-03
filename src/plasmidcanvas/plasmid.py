@@ -74,31 +74,56 @@ class Plasmid:
         # Place numbered tick markers around the plasmid to indicate increments of basepairs
         self._place_markers_at_degrees(ax, self._get_markers())
 
+    
+        
+
+        # ========== Placing features ============
         # Add all features to the plasmid map by running their render() method
-
-        multi_pair_features = [feature for feature in self.get_features() if issubclass(feature.__class__, MultiPairFeature)]
-
+        
+        placed_features = []
+        # All features are kept in orbits, decrementing the radius that the features are placed
+        # in based on the orbit if the feature is going to overlap. higher number = closer to the center
         orbit = 0
 
-        for feature in self.get_features():
+        multi_pair_features = [feature for feature in self.get_features() if issubclass(feature.__class__, MultiPairFeature)]
+        # Sorting gives the proper cascading effect when placing multipair features in orbit
+        # Also provides non-determinism, as otherwise the order in which features are added by the user
+        # impacts the layout.
+        sorted_multi_pair_features = sorted(multi_pair_features, key=lambda feature:feature.start_pair)
+        non_multi_pair_features = [feature for feature in self.get_features() if not issubclass(feature.__class__, MultiPairFeature)]
+
+        for feature in sorted_multi_pair_features:
 
             pre_placement_orbit = orbit
 
             # Deal with multi-pair feature overlaps
             if issubclass(feature.__class__, MultiPairFeature):
-                for potential_overlap in multi_pair_features:
-                    # Check if start_pair of feature lies between the start and end of the potential overlap feature
-                    if potential_overlap.get_start_pair() < feature.get_start_pair() < potential_overlap.get_end_pair(): 
+                # Get all current placed multi pair features
+                placed_multi_pair_features = [feature for feature in placed_features if issubclass(feature.__class__, MultiPairFeature)]
+                for potential_overlap in placed_multi_pair_features:
+                    # Check if start_pair of feature lies between the start and end of the potential overlap feature on the same orbit
+                    if (potential_overlap.get_start_pair() <= feature.get_start_pair() <= potential_overlap.get_end_pair()
+                        and potential_overlap._orbit == feature._orbit):
                         orbit += 1
 
-            # If we have not incremented orbit during this feature placement, reset back to orbit 0
             if pre_placement_orbit == orbit:
+                # Reset orbit to 0
                 orbit = 0
 
+            ORBIT_GAP_SF = 1.25
+            orbit_radius = self._radius - (self.get_plasmid_line_width() * ORBIT_GAP_SF * orbit)
+
+            feature._orbit = orbit
+
             print(f"orbit for feature {feature.get_name()} = {orbit}")
+            feature.render(ax, self.get_base_pairs(), self.DEFAULT_CIRCLE_CENTER, orbit_radius, self.DEFAULT_PLASMID_LINE_WIDTH)
+            
+            placed_features.append(feature)
+
+            
+
+        for feature in non_multi_pair_features:
             feature.render(ax, self.get_base_pairs(), self.DEFAULT_CIRCLE_CENTER, self._radius, self.DEFAULT_PLASMID_LINE_WIDTH)
-            
-            
 
     def _get_markers(self) -> list[float]:
 
@@ -256,14 +281,35 @@ ampr = ArrowFeature("ampr", 3293, 4153, -1)
 ampr.color = "red"
 plasmid.add_feature(ampr)
 
-overlapping = ArrowFeature("overlapping feature", 3500, 4300)
-overlapping.color = "pink"
-plasmid.add_feature(overlapping)
-
 # # Add ampr promoter as an arrow
 ampr_promoter = ArrowFeature("ampr promoter", 4154, 4258, -1)
 ampr_promoter.color = "darkred"
 plasmid.add_feature(ampr_promoter)
+
+overlapping = ArrowFeature("overlapping feature", 3500, 4300)
+overlapping.color = "darkblue"
+plasmid.add_feature(overlapping)
+
+overlapping = ArrowFeature("overlapping feature2", 3366, 3440)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
+
+overlapping = ArrowFeature("overlapping feature3", 3400, 3800)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
+
+overlapping = ArrowFeature("overlapping feature4", 2900, 3100)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
+
+overlapping = ArrowFeature("overlapping feature5", 3600, 3700)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
+
+overlapping = RectangleFeature("overlapping feature5", 2600, 3200)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
+
 
 restriction_site_1 = RestrictionSite("BamHI", 375)
 restriction_site_2 = RestrictionSite("BfuAI - BspMI", 1054)

@@ -46,8 +46,10 @@ class MultiPairFeature(Feature):
 
     start_pair: int
     end_pair: int
-    
-    # Used for positioning overlapping MultiPairFeatures into orbits for overlaps
+
+    SUPPORTED_LABEL_STYLES = ["on-circle", "off-circle", "inside-circle"]
+    label_style = ["off-circle"]
+
     _orbit: int = 0
 
     def __init__(self, name: str, start_pair: int, end_pair: int)  -> None:
@@ -75,6 +77,42 @@ class MultiPairFeature(Feature):
     
     def set_orbit(self, orbit: int) -> None:
         self._orbit = orbit
+
+    # TODO - Rethink how labelling works
+    def _get_feature_labels(self, start_pair=None, end_pair=None) -> None:
+
+        # Passing in values for start_pair and end_pair that are not None allows us to
+        # create features wherever we need, otherwise the default start_pair and end_pair will be used
+        start_pair = self.get_start_pair() if start_pair is None else start_pair
+        end_pair = self.get_end_pair() if end_pair is None else end_pair
+
+        labels = []
+        for style in  list(dict.fromkeys(self.label_style)):
+            if style not in self.SUPPORTED_LABEL_STYLES:
+                raise ValueError(f"{style} is not in the list of supported styles {self.SUPPORTED_LABEL_STYLES}")
+            
+            if style == "on-circle":
+                # Text must curve
+                curved_text = "TODO DO SOMETHING"
+            
+            elif style == "off-circle":
+                # Add a label
+                
+                label_base_pair_location: int = round((start_pair + end_pair) / 2)
+                label_text = f"{self.get_name()} ({start_pair} - {end_pair})"
+                print(label_text)
+                label = SinglePairLabel(label_text, label_base_pair_location)
+                label._orbit_ofset = self.get_orbit()
+                # TODO - MAKING LABEL LINE LENGTH SF TIMES BY 0.5 MAKES THEM GO IN
+                #label.line_length_sf=label.line_length_sf * 0.5
+                # Set line color to the same as the feature colour
+                # TODO - MAKE THIS CHANGE
+                label.set_line_color(self.color)
+                label.set_font_color(self.color)
+                labels.append(label)
+
+        return labels
+                
 
 class SinglePairFeature(Feature):
 
@@ -128,12 +166,15 @@ class LabelBase():
 
 class SinglePairLabel(SinglePairFeature, LabelBase):
     
-    DEFAULT_LINE_LENGTH_SF: float = 1.2
-    DEFAULT_LINE_ALPHA: float = 0.2
+    DEFAULT_LINE_LENGTH_SF: float = 1
+    DEFAULT_LINE_ALPHA: float = 0.3
     DEFAULT_LINE_COLOR: str = "black"
 
     line_length_sf: float = DEFAULT_LINE_LENGTH_SF
     line_color: str = DEFAULT_LINE_COLOR
+
+    # Used internally for making label lines longer for internal orbits
+    _orbit_ofset: int = 0
     
     def __init__(self, name: str, base_pair: int) -> None:
         super().__init__(name=name, base_pair=base_pair)
@@ -150,19 +191,29 @@ class SinglePairLabel(SinglePairFeature, LabelBase):
 
 
         # To make the line for the label stick out farther we times by a scale factor to make the radius larger
-        end_xy = (((p_center[0] + p_radius + p_line_width) * self.line_length_sf) * np.sin(radians),
-                  ((p_center[1] + p_radius + p_line_width) * self.line_length_sf) * np.cos(radians))
+        end_xy = (((p_center[0] + p_radius + (p_line_width*(2 + self._orbit_ofset))) * self.line_length_sf) * np.sin(radians),
+                  ((p_center[1] + p_radius + (p_line_width*(2 + self._orbit_ofset)) * self.line_length_sf) * np.cos(radians)))
 
-        align= "left" if (degrees <= 180) else "right"
+        align = "left" if (degrees <= 180) else "right"
 
-        ax.plot([start_xy[0], end_xy[0]], [start_xy[1], end_xy[1]], color=self.get_line_color(), alpha=self.DEFAULT_LINE_ALPHA)
-        ax.text(x=end_xy[0], y=end_xy[1], s=self.get_label_text(), fontsize=self.DEFAULT_FONT_SIZE, color=self.font_color, horizontalalignment=align, verticalalignment="center")
+        # Plot the line and text for the label
+        # Using zorder=2 to bring the line and label forward so they dont get covered up by other overlapping features
+
+        ax.plot([start_xy[0], end_xy[0]], [start_xy[1], end_xy[1]], color=self.get_line_color(), alpha=self.DEFAULT_LINE_ALPHA, zorder=3)
+        ax.text(x=end_xy[0], y=end_xy[1], s=self.get_label_text(), fontsize=self.DEFAULT_FONT_SIZE,
+                color=self.font_color, horizontalalignment=align, verticalalignment="center", zorder=3)
 
     def get_line_color(self) -> str:
         return self.line_color
 
     def set_line_color(self, line_color: str) -> None:
         self.line_color = line_color
+
+    def get_line_length_sf(self) -> float:
+        return self.line_length_sf
+    
+    def set_line_length_sf(self, line_length_sf: float) -> None:
+        self.line_length_sf = line_length_sf
 
 
 # Currently just an alias for a SinglePairLabel
@@ -206,9 +257,6 @@ class CurvedMultiPairLabel(MultiPairFeature, LabelBase):
         )
 
 class RectangleFeature(MultiPairFeature):
-    
-    SUPPORTED_LABEL_STYLES = ["on-circle", "off-circle", "inside-circle"]
-    label_style = ["off-circle"]
 
     # Center and radius for plotting the curved rectangle against plasmid circle
     #center
@@ -218,6 +266,7 @@ class RectangleFeature(MultiPairFeature):
 
     def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         
+        print(f"endpair = {self.get_end_pair()}")
         # Creating a rectangle
         # =============================================
         
@@ -246,30 +295,10 @@ class RectangleFeature(MultiPairFeature):
         # Labelling 
         # ==================================================
         
-        # Add all relevant label styles, removing duplicates
-        for style in  list(dict.fromkeys(self.label_style)):
-            if style not in self.SUPPORTED_LABEL_STYLES:
-                raise ValueError(f"{style} is not in the list of supported styles {self.SUPPORTED_LABEL_STYLES}")
-            
-            if style == "on-circle":
-                # Text must curve
-                curved_text = "TODO DO SOMETHING"
-            
-            elif style == "off-circle":
-                # Add a label
-                
-                label_base_pair_location: int = round((self.get_start_pair() + self.get_end_pair()) / 2)
-                label_text = f"{self.get_name()} ({self.get_start_pair()} - {self.get_end_pair()})"
-                label = SinglePairLabel(label_text, label_base_pair_location)
-                # TODO - MAKING LABEL LINE LENGTH SF TIMES BY 0.5 MAKES THEM GO IN
-                #label.line_length_sf=label.line_length_sf * 0.5
-                # Set line color to the same as the feature colour
-                # TODO - MAKE THIS CHANGE
-                label.set_line_color(self.color)
-                label.set_font_color(self.color)
-                label.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
-                
-        
+        if "none" not in list(dict.fromkeys(self.label_style)):
+            labels = self._get_feature_labels()   
+            for label in labels:
+                label.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)     
     
     def set_line_width_scale_factor(self, sf: float) -> None:
         self.line_width_scale_factor = sf
@@ -294,6 +323,8 @@ class ArrowFeature(DirectionalMultiPairFeature):
 
     def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
               
+        print(f"pre-rectangle endpair = {self.get_end_pair()}")
+        
         # NOTE - To clarify the mentions of "start" and "end" of an arrow
         # This side of the arrow is the "end" <| This side is the "start"
 
@@ -358,6 +389,16 @@ class ArrowFeature(DirectionalMultiPairFeature):
             
         rectangle = RectangleFeature(self.name, rectangle_start_pair, rectangle_end_pair)
         rectangle.set_color(self.get_color())
+        # Prevent labelling inside the rectangles render, as rectangle_end_pair is not
+        # the actual end_pair of the whole feature, so prevent labelling and control it below
+        rectangle.label_style = ["none"]
+        
+        # Label the arrow feature
+        if "none" not in list(dict.fromkeys(self.label_style)):
+            labels = self._get_feature_labels()   
+            for label in labels:
+                label.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
+
         rectangle.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
 
 
