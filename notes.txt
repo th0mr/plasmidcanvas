@@ -1,0 +1,7 @@
+TODO - 
+
+Make ticks
+Thin line for the plasmid circle
+poetry - pypi
+
+send out package to email
