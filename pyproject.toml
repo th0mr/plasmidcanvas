@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "plasmidcanvas"
+version = "0.1.0"
+description = "A Python graphics package for creating customised plasmid maps"
+authors = ["th0mr <thomrobinson76@gmail.com>"]
+license = "MIT License"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+matplotlib = "^3.8.3"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

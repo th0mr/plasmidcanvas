@@ -45,17 +45,17 @@ class Plasmid:
     def _basepair_to_degrees(self, basepair: int) -> float:
         return (basepair / self.base_pairs) * 360
 
-    def plot(self) -> None:
+    def plot(self) -> Figure:
         fig: Figure
         ax: Axes
         # Create plot
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(6,6), dpi=300)
 
-        # Change figure height and width
-        fig.set_figheight(6)
-        fig.set_figwidth(6)
-        # Set dpi to print quality
-        fig.set_dpi(300)
+        # # Change figure height and width
+        # fig.set_figheight(6)
+        # fig.set_figwidth(6)
+        # # Set dpi to print quality
+        # fig.set_dpi(300)
 
         # Set x,y scaling to be equal
         ax.set_aspect('equal')
@@ -73,9 +73,6 @@ class Plasmid:
         
         # Place numbered tick markers around the plasmid to indicate increments of basepairs
         self._place_markers_at_degrees(ax, self._get_markers())
-
-    
-        
 
         # ========== Placing features ============
         # Add all features to the plasmid map by running their render() method
@@ -96,14 +93,17 @@ class Plasmid:
 
             pre_placement_orbit = orbit
 
+            # orbit = 0
+
             # Deal with multi-pair feature overlaps
             if issubclass(feature.__class__, MultiPairFeature):
                 # Get all current placed multi pair features
-                placed_multi_pair_features = [feature for feature in placed_features if issubclass(feature.__class__, MultiPairFeature)]
-                for potential_overlap in placed_multi_pair_features:
+                sorted_placed_multi_pair_features = sorted([feature for feature in placed_features if issubclass(feature.__class__, MultiPairFeature)],
+                                                            key=lambda feature:feature.start_pair)
+                for potential_overlap in sorted_placed_multi_pair_features:
                     # Check if start_pair of feature lies between the start and end of the potential overlap feature on the same orbit
                     if (potential_overlap.get_start_pair() <= feature.get_start_pair() <= potential_overlap.get_end_pair()
-                        and potential_overlap._orbit == feature._orbit):
+                        and potential_overlap._orbit == orbit):
                         orbit += 1
 
             if pre_placement_orbit == orbit:
@@ -120,10 +120,11 @@ class Plasmid:
             
             placed_features.append(feature)
 
-            
-
         for feature in non_multi_pair_features:
             feature.render(ax, self.get_base_pairs(), self.DEFAULT_CIRCLE_CENTER, self._radius, self.DEFAULT_PLASMID_LINE_WIDTH)
+
+        fig.tight_layout()
+        return fig
 
     def _get_markers(self) -> list[float]:
 
@@ -163,8 +164,10 @@ class Plasmid:
             ax.text(x,y, s=f"{self._degrees_to_basepair(degree)}", horizontalalignment='center', fontstyle='italic', alpha=0.5, fontsize=7)
 
 
-    def save_to_file(self, fig: Figure, filename: str) -> None:
-        pass
+    def save_to_file(self, filename: str) -> None:
+        # TODO - Path validation
+        fig = self.plot()
+        fig.savefig(fname=filename, bbox_inches="tight")
 
     def render(self, ax: Axes) -> None:
         center: tuple[float, float] = self.DEFAULT_CIRCLE_CENTER
@@ -335,3 +338,4 @@ plasmid.add_feature(restriction_site_5)
 
 # Plot the plasmid
 plasmid.plot()
+plasmid.save_to_file("myplasmid")

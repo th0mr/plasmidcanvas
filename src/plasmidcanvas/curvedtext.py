@@ -1,7 +1,7 @@
 # Curved text support for matplotlib
 
-# Stolen from https://stackoverflow.com/a/44521963
-# Thanks to Thomas Kühn and mueslo
+# Taken from https://stackoverflow.com/a/44521963
+# Many thanks to Thomas Kühn and mueslo for their work on this :)
 
 from matplotlib import pyplot as plt
 from matplotlib import patches
