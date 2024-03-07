@@ -2,7 +2,7 @@ from matplotlib.axes import Axes
 from matplotlib.patches import FancyArrowPatch, Polygon, RegularPolygon, Wedge
 import numpy as np
 
-from curvedtext import CurvedText
+from plasmidcanvas.curvedtext import CurvedText
 
 #from plasmidcanvas.curvedtext import CurvedText
 
@@ -100,7 +100,6 @@ class MultiPairFeature(Feature):
                 
                 label_base_pair_location: int = round((start_pair + end_pair) / 2)
                 label_text = f"{self.get_name()} ({start_pair} - {end_pair})"
-                print(label_text)
                 label = SinglePairLabel(label_text, label_base_pair_location)
                 label._orbit_ofset = self.get_orbit()
                 # TODO - MAKING LABEL LINE LENGTH SF TIMES BY 0.5 MAKES THEM GO IN
@@ -234,9 +233,6 @@ class CurvedMultiPairLabel(MultiPairFeature, LabelBase):
         start_radians = np.deg2rad((self.get_start_pair() / p_total_base_pairs) * 360)
         end_radians   = np.deg2rad((self.get_end_pair() / p_total_base_pairs) * 360)
 
-        print(f"start_radians = {start_radians}")
-        print(f"end_radians = {end_radians}")
-
         # SWAP SIN AND COS TO MAKE IT WORK FOR TOP RIGHT QUADRANT
 
         curve = [np.cos(np.linspace(start_radians, end_radians)),
@@ -266,7 +262,6 @@ class RectangleFeature(MultiPairFeature):
 
     def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         
-        print(f"endpair = {self.get_end_pair()}")
         # Creating a rectangle
         # =============================================
         
@@ -322,8 +317,6 @@ class DirectionalMultiPairFeature(MultiPairFeature):
 class ArrowFeature(DirectionalMultiPairFeature):    
 
     def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
-              
-        print(f"pre-rectangle endpair = {self.get_end_pair()}")
         
         # NOTE - To clarify the mentions of "start" and "end" of an arrow
         # This side of the arrow is the "end" <| This side is the "start"

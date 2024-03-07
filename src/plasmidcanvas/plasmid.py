@@ -7,7 +7,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Circle, Wedge
 import numpy as np
 
-from feature import CurvedMultiPairLabel, Feature, MultiPairFeature, RectangleFeature, ArrowFeature, RestrictionSite, SinglePairLabel
+from plasmidcanvas.feature import CurvedMultiPairLabel, Feature, MultiPairFeature, RectangleFeature, ArrowFeature, RestrictionSite, SinglePairLabel
 
 
 
@@ -115,7 +115,6 @@ class Plasmid:
 
             feature._orbit = orbit
 
-            print(f"orbit for feature {feature.get_name()} = {orbit}")
             feature.render(ax, self.get_base_pairs(), self.DEFAULT_CIRCLE_CENTER, orbit_radius, self.DEFAULT_PLASMID_LINE_WIDTH)
             
             placed_features.append(feature)
@@ -168,6 +167,7 @@ class Plasmid:
         # TODO - Path validation
         fig = self.plot()
         fig.savefig(fname=filename, bbox_inches="tight")
+        print(f"Plasmid map saved to {filename}")
 
     def render(self, ax: Axes) -> None:
         center: tuple[float, float] = self.DEFAULT_CIRCLE_CENTER
@@ -252,90 +252,90 @@ class PlasmidStyle:
         pass
 
 
-## TESTING
+# ## TESTING
     
 
-# Define a plasmid of X base pairs long, with a name
-plasmid = Plasmid("pBR322", 4361)
-plasmid.set_marker_style("auto")
+# # Define a plasmid of X base pairs long, with a name
+# plasmid = Plasmid("pBR322", 4361)
+# plasmid.set_marker_style("auto")
 
-# Adding an arrow
-# for pBR322 this is TcR
-tcr = ArrowFeature("TcR", 86,1276)
-# # # Customise the thinkness of the line relative to the thickness of the plasmid circle
-# # tcr.set_line_width_scale_factor(1.0)
-plasmid.add_feature(tcr)
+# # Adding an arrow
+# # for pBR322 this is TcR
+# tcr = ArrowFeature("TcR", 86,1276)
+# # # # Customise the thinkness of the line relative to the thickness of the plasmid circle
+# # # tcr.set_line_width_scale_factor(1.0)
+# plasmid.add_feature(tcr)
 
-# # Add rop protein for pBR322
-rop = ArrowFeature("rop", 1915,2106)
-plasmid.add_feature(rop)
+# # # Add rop protein for pBR322
+# rop = ArrowFeature("rop", 1915,2106)
+# plasmid.add_feature(rop)
 
-# # Add a rectangle, base of mobility for pBR322
-bom = RectangleFeature("bom", 2208,2348)
-plasmid.add_feature(bom)
+# # # Add a rectangle, base of mobility for pBR322
+# bom = RectangleFeature("bom", 2208,2348)
+# plasmid.add_feature(bom)
 
-# # Add ori
-ori = ArrowFeature("ori", 2534, 3122, -1)
-ori.color = "orange"
-plasmid.add_feature(ori)
+# # # Add ori
+# ori = ArrowFeature("ori", 2534, 3122, -1)
+# ori.color = "orange"
+# plasmid.add_feature(ori)
 
-# # Add ampr - technically this arrow should have a portion segmented for its signal sequence
-ampr = ArrowFeature("ampr", 3293, 4153, -1)
-ampr.color = "red"
-plasmid.add_feature(ampr)
+# # # Add ampr - technically this arrow should have a portion segmented for its signal sequence
+# ampr = ArrowFeature("ampr", 3293, 4153, -1)
+# ampr.color = "red"
+# plasmid.add_feature(ampr)
 
-# # Add ampr promoter as an arrow
-ampr_promoter = ArrowFeature("ampr promoter", 4154, 4258, -1)
-ampr_promoter.color = "darkred"
-plasmid.add_feature(ampr_promoter)
+# # # Add ampr promoter as an arrow
+# ampr_promoter = ArrowFeature("ampr promoter", 4154, 4258, -1)
+# ampr_promoter.color = "darkred"
+# plasmid.add_feature(ampr_promoter)
 
-overlapping = ArrowFeature("overlapping feature", 3500, 4300)
-overlapping.color = "darkblue"
-plasmid.add_feature(overlapping)
+# overlapping = ArrowFeature("overlapping feature", 3500, 4300)
+# overlapping.color = "darkblue"
+# plasmid.add_feature(overlapping)
 
-overlapping = ArrowFeature("overlapping feature2", 3366, 3440)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = ArrowFeature("overlapping feature2", 3366, 3440)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
-overlapping = ArrowFeature("overlapping feature3", 3400, 3800)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = ArrowFeature("overlapping feature3", 3400, 3800)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
-overlapping = ArrowFeature("overlapping feature4", 2900, 3100)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = ArrowFeature("overlapping feature4", 2900, 3100)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
-overlapping = ArrowFeature("overlapping feature5", 3600, 3700)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = ArrowFeature("overlapping feature5", 3600, 3700)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
-overlapping = RectangleFeature("overlapping feature5", 2600, 3200)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = RectangleFeature("overlapping feature5", 2600, 3200)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
 
-restriction_site_1 = RestrictionSite("BamHI", 375)
-restriction_site_2 = RestrictionSite("BfuAI - BspMI", 1054)
-restriction_site_3 = RestrictionSite("Bpu10I", 1581)
-restriction_site_4 = RestrictionSite("AflIII - PciI", 2473)
-restriction_site_5 = RestrictionSite("AhdI", 3366)
+# restriction_site_1 = RestrictionSite("BamHI", 375)
+# restriction_site_2 = RestrictionSite("BfuAI - BspMI", 1054)
+# restriction_site_3 = RestrictionSite("Bpu10I", 1581)
+# restriction_site_4 = RestrictionSite("AflIII - PciI", 2473)
+# restriction_site_5 = RestrictionSite("AhdI", 3366)
 
-# Add the sites to the plasmid
-plasmid.add_feature(restriction_site_1)
-plasmid.add_feature(restriction_site_2)
-plasmid.add_feature(restriction_site_3)
-plasmid.add_feature(restriction_site_4)
-plasmid.add_feature(restriction_site_5)
+# # Add the sites to the plasmid
+# plasmid.add_feature(restriction_site_1)
+# plasmid.add_feature(restriction_site_2)
+# plasmid.add_feature(restriction_site_3)
+# plasmid.add_feature(restriction_site_4)
+# plasmid.add_feature(restriction_site_5)
 
-# plasmid.add_feature(CurvedMultiPairLabel("TcR LOOOOOOOOOONG", 86, 1210))
-# plasmid.add_feature(CurvedMultiPairLabel("rop", 1915, 2040))
-# plasmid.add_feature(CurvedMultiPairLabel("bom", 1915, 2040))
-# plasmid.add_feature(CurvedMultiPairLabel("ori", 2599, 3122))
-# plasmid.add_feature(CurvedMultiPairLabel("ampr", 3358, 4153))
-# plasmid.add_feature(CurvedMultiPairLabel("word", 4000, 4361))
-# plasmid.add_feature(CurvedMultiPairLabel("word", 4300, 100))
-# plasmid.add_feature(CurvedMultiPairLabel("ampr", 400, 3000))
+# # plasmid.add_feature(CurvedMultiPairLabel("TcR LOOOOOOOOOONG", 86, 1210))
+# # plasmid.add_feature(CurvedMultiPairLabel("rop", 1915, 2040))
+# # plasmid.add_feature(CurvedMultiPairLabel("bom", 1915, 2040))
+# # plasmid.add_feature(CurvedMultiPairLabel("ori", 2599, 3122))
+# # plasmid.add_feature(CurvedMultiPairLabel("ampr", 3358, 4153))
+# # plasmid.add_feature(CurvedMultiPairLabel("word", 4000, 4361))
+# # plasmid.add_feature(CurvedMultiPairLabel("word", 4300, 100))
+# # plasmid.add_feature(CurvedMultiPairLabel("ampr", 400, 3000))
 
-# Plot the plasmid
-plasmid.plot()
-plasmid.save_to_file("myplasmid")
+# # Plot the plasmid
+# plasmid.plot()
+# plasmid.save_to_file("myplasmid")
