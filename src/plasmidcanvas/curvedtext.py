@@ -33,6 +33,8 @@ class CurvedText(mtext.Text):
             else:
                 t = mtext.Text(0,0,c, **kwargs)
 
+            t.set_fontsize(kwargs.get("fontsize"))
+
             #resetting unnecessary arguments
             t.set_ha('center')
             t.set_rotation(0)
@@ -97,8 +99,24 @@ class CurvedText(mtext.Text):
         rads = np.arctan2((y_fig[1:] - y_fig[:-1]),(x_fig[1:] - x_fig[:-1]))
         degs = np.rad2deg(rads)
 
+        # ==== Limiting the given curve to create a horizontal center alignment ===
+        # Work out the width needed for the 
+        width_needed = 0
+        for c,t in self.__Characters:
+            bbox1  = t.get_window_extent(renderer=renderer)
+            w = bbox1.width
+            width_needed += w
 
-        rel_pos = 10
+        max_width_allowed = l_fig[-1]
+        # if width_needed > max_width_allowed:
+        #     raise LabelTooBig
+        
+        start_l_fig_val = (max_width_allowed / 2) - (width_needed / 2)
+        limited_l_fig = np.where(l_fig >= start_l_fig_val)[0]
+
+        # ============================
+
+        rel_pos = start_l_fig_val
         for c,t in self.__Characters:
             #finding the width of c:
             t.set_rotation(0)
@@ -119,8 +137,19 @@ class CurvedText(mtext.Text):
             #finding the two data points between which the horizontal
             #center point of the character will be situated
             #left and right indices:
-            il = np.where(rel_pos+w/2 >= l_fig)[0][-1]
-            ir = np.where(rel_pos+w/2 <= l_fig)[0][0]
+
+            il_candidates = np.where(rel_pos+w/2 >= l_fig)[0]
+            # It wont fit, so set t alpha to 0.0 and move on
+            if len(il_candidates) == 0:
+                t.set_alpha(0.0)
+                continue
+            il = il_candidates[-1]
+
+            ir_candidates = np.where(rel_pos+w/2 <= l_fig)[0]
+            if len(ir_candidates) == 0:
+                t.set_alpha(0.0)
+                continue
+            ir = ir_candidates[0]
 
             #if we exactly hit a data point:
             if ir == il:
