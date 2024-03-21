@@ -7,7 +7,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Circle, Wedge
 import numpy as np
 
-from plasmidcanvas.feature import CurvedMultiPairLabel, Feature, LabelBase, MultiPairFeature, RectangleFeature, ArrowFeature, RestrictionSite, SinglePairLabel
+from feature import CurvedMultiPairLabel, Feature, LabelBase, MultiPairFeature, RectangleFeature, ArrowFeature, RestrictionSite, SinglePairLabel
 
 
 
@@ -25,7 +25,7 @@ class Plasmid:
     # Used for n_markers style
     DEFAULT_NUMBER_OF_MARKERS: int = 16
 
-    SUPPORTED_TICK_STYLES = ["auto"]
+    SUPPORTED_TICK_STYLES = ["auto", "none"]
     DEFAULT_TICK_STYLE = "auto"
 
     name: str = DEFAULT_PLASMID_NAME
@@ -43,7 +43,7 @@ class Plasmid:
     _tick_color: str = DEFAULT_PLASMID_COLOR
 
     def __init__(self, name: str, base_pairs: int) -> None:
-        self.set_base_pairs(base_pairs)
+        self.set_base_pairs(int(base_pairs))
         self.set_name(name)
 
     def _degrees_to_basepair(self, degree: float) -> int:
@@ -180,6 +180,8 @@ class Plasmid:
             # Turn base pairs into degrees
             degrees_to_place_markers = map(self._basepair_to_degrees, marker_basepairs)
             return degrees_to_place_markers
+        elif self._tick_style == "none":
+            return []
 
     def _place_markers_at_degrees(self, ax, degrees_to_place_markers: list[float]) -> None:
         for degree in degrees_to_place_markers:
@@ -280,6 +282,21 @@ class Plasmid:
     
     def set_number_of_markers(self, number_of_markers: int) -> None:
         self._number_of_markers = number_of_markers
+        
+    def get_tick_style(self) -> str:
+        return self._tick_style
+    
+    def set_tick_style(self, tick_style: str) -> None:
+        if tick_style not in self.SUPPORTED_TICK_STYLES:
+            raise ValueError(f"'{tick_style}' is not a supported tick style. The following are supported {self.SUPPORTED_TICK_STYLES}")
+        self._tick_style = tick_style
+        
+    def get_tick_color(self) -> str:
+        return self._tick_color
+    
+    # TODO - Add validation for tick color?
+    def set_tick_color(self, tick_color: str) -> None:
+        self._tick_color = tick_color
 
 class PlasmidStyle:
 
@@ -330,37 +347,37 @@ ampr_promoter = ArrowFeature("ampr promoter", 4154, 4258, -1)
 ampr_promoter.color = "darkred"
 plasmid.add_feature(ampr_promoter)
 
-# overlapping = ArrowFeature("of1", 3500, 4300)
-# overlapping.color = "darkblue"
-# plasmid.add_feature(overlapping)
+overlapping = ArrowFeature("fictionalOverlap", 3500, 4300)
+overlapping.color = "darkblue"
+plasmid.add_feature(overlapping)
 
-# overlapping = ArrowFeature("of2", 3366, 3440)
-# overlapping.color = "darkgreen"
-# plasmid.add_feature(overlapping)
+overlapping = ArrowFeature("fictionalOverlap2", 3366, 3440)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
 
-# overlapping = ArrowFeature("of3", 3400, 3800)
-# overlapping.color = "darkgreen"
-# plasmid.add_feature(overlapping)
+overlapping = ArrowFeature("fictionalOverlap3", 3400, 3800)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
 
-# overlapping = ArrowFeature("of4", 2900, 3100)
-# overlapping.color = "darkgreen"
-# plasmid.add_feature(overlapping)
+overlapping = ArrowFeature("fictionalOverlap4", 2900, 3100)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
 
-# overlapping = ArrowFeature("of5", 3600, 3700)
-# overlapping.color = "darkgreen"
-# plasmid.add_feature(overlapping)
+overlapping = ArrowFeature("fictionalOverlap5", 3600, 3700)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
 
-# overlapping = RectangleFeature("of6", 2600, 3200)
-# overlapping.color = "darkgreen"
-# plasmid.add_feature(overlapping)
+overlapping = RectangleFeature("fictionalOverlap6", 2600, 3200)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
 
-# overlapping = RectangleFeature("of7", 1000, 1800)
-# overlapping.color = "darkgreen"
-# plasmid.add_feature(overlapping)
+overlapping = RectangleFeature("fictionalOverlap7", 1000, 1800)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
 
-# overlapping = RectangleFeature("of8", 4200, 100)
-# overlapping.color = "darkgreen"
-# plasmid.add_feature(overlapping)
+overlapping = ArrowFeature("fictionalOverlap8", 4200, 450, direction=-1)
+overlapping.color = "darkgreen"
+plasmid.add_feature(overlapping)
 
 
 restriction_site_1 = RestrictionSite("BamHI", 375)
@@ -384,6 +401,8 @@ plasmid.add_feature(restriction_site_5)
 # plasmid.add_feature(CurvedMultiPairLabel("word", 4000, 4361))
 # plasmid.add_feature(CurvedMultiPairLabel("word", 4300, 100))
 # plasmid.add_feature(CurvedMultiPairLabel("ampr", 400, 3000))
+
+plasmid.set_tick_style("none")
 
 # Plot the plasmid
 plasmid.save_to_file("myplasmid")

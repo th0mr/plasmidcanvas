@@ -3,19 +3,35 @@ from matplotlib.axes import Axes
 from matplotlib.patches import FancyArrowPatch, Polygon, RegularPolygon, Wedge
 import numpy as np
 
-from plasmidcanvas.curvedtext import CurvedText
+from curvedtext import CurvedText
 
 #from plasmidcanvas.curvedtext import CurvedText
 
 # ==================================
 # Abstract Feature Classes
 
-# Takes an angle read clockwise from 12oclock, where the plasmid logically starts
-# and converts it to an angle that matplotlib wedges can use, i.e. counterclockwise
-# starting from 3
 def to_counter_clockwise(clockwise_angle):
     counterclockwise_angle = (90 - clockwise_angle) % 360
     return counterclockwise_angle
+
+def circular_midpoint(start, end, total_count):
+    clockwise_distance = (end - start) % total_count
+    counterclockwise_distance = (start - end) % total_count
+    
+    if clockwise_distance <= counterclockwise_distance:
+        midpoint = (start + clockwise_distance / 2) % total_count
+    else:
+        midpoint = (start - counterclockwise_distance / 2) % total_count
+        
+    return midpoint
+
+def circular_length(start, end, total_count):
+    clockwise_distance = (end - start) % total_count
+    counterclockwise_distance = (start - end) % total_count
+    
+    length = min(clockwise_distance, counterclockwise_distance)
+    
+    return length
 
 class Feature:
 
@@ -48,7 +64,7 @@ class MultiPairFeature(Feature):
     end_pair: int
 
     SUPPORTED_LABEL_STYLES = ["on-circle", "off-circle"]
-    label_style = ["off-circle", "on-circle"]
+    label_style = ["off-circle"]
 
     _orbit: int = 0
 
@@ -58,7 +74,7 @@ class MultiPairFeature(Feature):
         self.set_end_pairs(end_pair)
 
     def length(self) -> int:
-        return self.get_end_pair() - self.get_start_pair()
+        return (self.get_end_pair() - self.get_start_pair()) 
 
     def get_start_pair(self) -> int:
         return self.start_pair
@@ -100,7 +116,7 @@ class MultiPairFeature(Feature):
         self.label_style = label_styles
             
     # TODO - Rethink how labelling works
-    def _get_feature_labels(self, start_pair=None, end_pair=None, styles=None) -> None:
+    def _get_feature_labels(self, p_total_base_pairs: int, start_pair: int = None, end_pair: int =None, styles: list[str]=None) -> None:
 
         # Passing in values for start_pair and end_pair that are not None allows us to
         # create features wherever we need, otherwise the default start_pair and end_pair will be used
@@ -123,9 +139,9 @@ class MultiPairFeature(Feature):
                 labels.append(label)
             
             elif style == "off-circle":
-                # Add a label
-                
-                label_base_pair_location: int = round((start_pair + end_pair) / 2)
+                # Adds an off circle label
+                # Calculate the midpoint, accounting for features that pass through 0 using circular_midpoint           
+                label_base_pair_location: int = round(circular_midpoint(start_pair, end_pair, p_total_base_pairs))
                 label_text = f"{self.get_name()} ({start_pair} - {end_pair})"
                 label = SinglePairLabel(label_text, label_base_pair_location)
                 label._orbit_ofset = self.get_orbit()
@@ -325,7 +341,6 @@ class CurvedMultiPairLabel(MultiPairFeature, LabelBase):
 class RectangleFeature(MultiPairFeature):
 
     # Center and radius for plotting the curved rectangle against plasmid circle
-    #center
     radius: float
 
     line_width_scale_factor: float = 1
@@ -346,22 +361,18 @@ class RectangleFeature(MultiPairFeature):
         theta_1=to_counter_clockwise(start_to_end_angle)
         theta_2=to_counter_clockwise(start_angle)
 
-        # 3 - TODO - Adjust placement of the rectangle
-        # For the rectangle to sit on top of the plasmid ring, the radius must be beyond 
-        # the radius of the plasmid + half the plasmid circle width
-        r_radius: float = p_radius
 
         # TODO - Support on / off the circle placement by moving radius
 
-        # 4 - Place the wedge
-        rectangle = Wedge(center=p_center, r=p_radius, theta1=theta_1, theta2=theta_2, width=(p_line_width * self.line_width_scale_factor), label="blah testing", color=self.color)
+        # 3 - Place the wedge
+        rectangle = Wedge(center=p_center, r=p_radius, theta1=theta_1, theta2=theta_2, width=(p_line_width * self.line_width_scale_factor), color=self.color)
         ax.add_patch(rectangle)
 
         # Labelling 
         # ==================================================
         
         if "none" not in list(dict.fromkeys(self.label_style)):
-            labels = self._get_feature_labels()   
+            labels = self._get_feature_labels(p_total_base_pairs)   
             for label in labels:
                 label.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
     
@@ -398,7 +409,7 @@ class ArrowFeature(DirectionalMultiPairFeature):
         # a visable arrow
         MAX_PERCENT_AS_ARROW_HEAD = 0.50
         ARROW_LENGTH_CAP = p_total_base_pairs * 0.015
-        max_arrow_length = self.length() * MAX_PERCENT_AS_ARROW_HEAD
+        max_arrow_length = circular_length(self.get_start_pair(), self.get_end_pair(), p_total_base_pairs) * MAX_PERCENT_AS_ARROW_HEAD
         length_of_arrow_head = max_arrow_length if max_arrow_length < ARROW_LENGTH_CAP else ARROW_LENGTH_CAP        
 
 
@@ -406,11 +417,11 @@ class ArrowFeature(DirectionalMultiPairFeature):
 
         # If direction is clockwise (1) then set the arrowhead to be made on the end of the feature
         if self.get_direction() == 1:
-            arrow_start_base_pair = self.get_end_pair() - length_of_arrow_head
+            arrow_start_base_pair = int((self.get_end_pair() - length_of_arrow_head) % p_total_base_pairs)
             arrow_end_base_pair = self.get_end_pair()
         # If direction is counter-clockwise (-1) then set the arrowhead to be made at the start of the feature
         elif self.get_direction() == -1:
-            arrow_start_base_pair = self.get_start_pair() + length_of_arrow_head
+            arrow_start_base_pair = int((self.get_start_pair() + length_of_arrow_head) % p_total_base_pairs)
             arrow_end_base_pair = self.get_start_pair()
         else:
             raise ValueError(f"direction={self.get_direction()} is invalid")
@@ -445,9 +456,9 @@ class ArrowFeature(DirectionalMultiPairFeature):
 
         if self.get_direction() == 1:
             rectangle_start_pair = self.get_start_pair()
-            rectangle_end_pair = int(arrow_start_base_pair)
+            rectangle_end_pair = arrow_start_base_pair
         elif self.get_direction() == -1:
-            rectangle_start_pair = int (arrow_start_base_pair)
+            rectangle_start_pair = arrow_start_base_pair
             rectangle_end_pair = self.get_end_pair()
             
         rectangle = RectangleFeature(self.name, rectangle_start_pair, rectangle_end_pair)
@@ -458,7 +469,7 @@ class ArrowFeature(DirectionalMultiPairFeature):
         
         # Label the arrow feature
         if "none" not in list(dict.fromkeys(self.label_style)):
-            labels = self._get_feature_labels(self.get_start_pair(), self.get_end_pair())   
+            labels = self._get_feature_labels(p_total_base_pairs, self.get_start_pair(), self.get_end_pair())   
             for label in labels:
                     label.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
 
