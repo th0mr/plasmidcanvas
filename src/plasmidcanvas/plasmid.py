@@ -363,7 +363,7 @@ overlapping = ArrowFeature("fictionalOverlap4", 2900, 3100)
 overlapping.color = "darkgreen"
 plasmid.add_feature(overlapping)
 
-overlapping = ArrowFeature("fictionalOverlap5", 3600, 3700)
+overlapping = ArrowFeature("fictionalOverlap5", 3675, 3750)
 overlapping.color = "darkgreen"
 plasmid.add_feature(overlapping)
 
