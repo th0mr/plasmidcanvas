@@ -3,35 +3,14 @@ from matplotlib.axes import Axes
 from matplotlib.patches import FancyArrowPatch, Polygon, RegularPolygon, Wedge
 import numpy as np
 
+from utils import circular_length, circular_midpoint, to_counter_clockwise
+
 from curvedtext import CurvedText
 
 #from plasmidcanvas.curvedtext import CurvedText
 
 # ==================================
 # Abstract Feature Classes
-
-def to_counter_clockwise(clockwise_angle):
-    counterclockwise_angle = (90 - clockwise_angle) % 360
-    return counterclockwise_angle
-
-def circular_midpoint(start, end, total_count):
-    clockwise_distance = (end - start) % total_count
-    counterclockwise_distance = (start - end) % total_count
-    
-    if clockwise_distance <= counterclockwise_distance:
-        midpoint = (start + clockwise_distance / 2) % total_count
-    else:
-        midpoint = (start - counterclockwise_distance / 2) % total_count
-        
-    return midpoint
-
-def circular_length(start, end, total_count):
-    clockwise_distance = (end - start) % total_count
-    counterclockwise_distance = (start - end) % total_count
-    
-    length = min(clockwise_distance, counterclockwise_distance)
-    
-    return length
 
 class Feature:
 
@@ -43,7 +22,7 @@ class Feature:
     def __init__(self, name: str) -> None:
         self.set_name(name)
 
-    def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+    def _render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         pass
 
     def get_name(self) -> str:
@@ -60,11 +39,13 @@ class Feature:
 
 class MultiPairFeature(Feature):
 
+    DEFAULT_FONT_SIZE: int = 7
+
     start_pair: int
     end_pair: int
 
     SUPPORTED_LABEL_STYLES = ["on-circle", "off-circle"]
-    label_style = ["off-circle"]
+    label_style = ["off-circle", "on-circle"]
 
     _orbit: int = 0
 
@@ -166,6 +147,7 @@ class SinglePairFeature(Feature):
     def set_base_pair(self, base_pair) -> None:
         self.base_pair = base_pair
 
+
 class LabelBase():
     DEFAULT_FONT_SIZE: int = 7
     DEFAULT_FONT_COLOR: str = "black"
@@ -175,7 +157,7 @@ class LabelBase():
     font_size: int = DEFAULT_FONT_SIZE
 
     def __init__(self, name: str) -> None:
-        self.set_label_text(self.get_name())
+        self.set_label_text(name)
 
     def get_font_color(self) -> str:
         return self.font_color
@@ -203,12 +185,12 @@ class LabelBase():
 
 class SinglePairLabel(SinglePairFeature, LabelBase):
     
-    DEFAULT_LINE_LENGTH_SF: float = 1
-    DEFAULT_LINE_ALPHA: float = 0.3
-    DEFAULT_LINE_COLOR: str = "black"
+    _DEFAULT_LINE_LENGTH_SF: float = 1
+    _DEFAULT_LINE_ALPHA: float = 0.3
+    _DEFAULT_LINE_COLOR: str = "black"
 
-    line_length_sf: float = DEFAULT_LINE_LENGTH_SF
-    line_color: str = DEFAULT_LINE_COLOR
+    line_length_sf: float = _DEFAULT_LINE_LENGTH_SF
+    line_color: str = _DEFAULT_LINE_COLOR
 
     # Used internally for making label lines longer for internal orbits
     _orbit_ofset: int = 0
@@ -217,7 +199,7 @@ class SinglePairLabel(SinglePairFeature, LabelBase):
         super().__init__(name=name, base_pair=base_pair)
         LabelBase.__init__(self, name)
         
-    def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+    def _render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         
         degrees = (self.get_base_pair() / p_total_base_pairs) * 360
         radians = np.deg2rad(degrees)
@@ -235,7 +217,7 @@ class SinglePairLabel(SinglePairFeature, LabelBase):
         # Plot the line and text for the label
         # Using zorder=3 to bring the line and label forward so they dont get covered up by other overlapping features
 
-        ax.plot([start_xy[0], end_xy[0]], [start_xy[1], end_xy[1]], color=self.get_line_color(), alpha=self.DEFAULT_LINE_ALPHA, zorder=3)
+        ax.plot([start_xy[0], end_xy[0]], [start_xy[1], end_xy[1]], color=self.get_line_color(), alpha=self._DEFAULT_LINE_ALPHA, zorder=3)
         ax.text(x=end_xy[0], y=end_xy[1], s=self.get_label_text(), fontsize=self.DEFAULT_FONT_SIZE,
                 color=self.font_color, horizontalalignment=align, verticalalignment="center", zorder=3)
 
@@ -269,12 +251,12 @@ class CurvedMultiPairLabel(MultiPairFeature, LabelBase):
         super().__init__(name, start_pair, end_pair)
         LabelBase.__init__(self, name)
 
-    def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+    def _render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
 
         start_radians = np.deg2rad((self.get_start_pair() / p_total_base_pairs) * 360)
         end_radians   = np.deg2rad((self.get_end_pair() / p_total_base_pairs) * 360)
 
-        label_center_base_pair = round((self.get_start_pair() + self.get_end_pair()) / 2)
+        label_center_base_pair = round(circular_midpoint(start=self.get_start_pair(), end=self.get_end_pair(), total_count=p_total_base_pairs))
         center_bp_angle = (label_center_base_pair / p_total_base_pairs) * 360
 
 
@@ -290,10 +272,24 @@ class CurvedMultiPairLabel(MultiPairFeature, LabelBase):
             # The default style for the text to curve alignment is 'bottom'
             # meaning the letters are split up and placed under the curve, with the top of the letter closest to the curve
             # We make the curve go from start to end here to achieve the right results
-            curve = [np.sin(np.linspace(start_radians, end_radians)),
-                     np.cos(np.linspace(start_radians, end_radians))]
 
-
+            # We also account for curves that pass through zero by assisting in assembling a split curve and stitching it back together
+            if end_radians < start_radians:
+                curve_to_two_pi = [np.sin(np.linspace(start_radians, (2 * np.pi))),
+                                   np.cos(np.linspace(start_radians, (2 * np.pi)))]
+                curve_from_zero_to_end = [np.sin(np.linspace(0, end_radians)),
+                                          np.cos(np.linspace(0, end_radians))]
+                
+                # TODO - COMBINE THESE TWO TO CREATE THE RIGHT EFFECT
+                curve = [np.concatenate((curve_to_two_pi[0], curve_from_zero_to_end[0])),
+                         np.concatenate((curve_to_two_pi[1], curve_from_zero_to_end[1]))]
+            
+            else:
+                curve = [np.sin(np.linspace(start_radians, end_radians)),
+                        np.cos(np.linspace(start_radians, end_radians))]
+                
+        print(curve)
+            
         # ============== Centering the text on the feature ===============
 
 
@@ -345,7 +341,7 @@ class RectangleFeature(MultiPairFeature):
 
     line_width_scale_factor: float = 1
 
-    def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+    def _render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         
         # Creating a rectangle
         # =============================================
@@ -361,7 +357,6 @@ class RectangleFeature(MultiPairFeature):
         theta_1=to_counter_clockwise(start_to_end_angle)
         theta_2=to_counter_clockwise(start_angle)
 
-
         # TODO - Support on / off the circle placement by moving radius
 
         # 3 - Place the wedge
@@ -374,7 +369,7 @@ class RectangleFeature(MultiPairFeature):
         if "none" not in list(dict.fromkeys(self.label_style)):
             labels = self._get_feature_labels(p_total_base_pairs)   
             for label in labels:
-                label.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
+                label._render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
     
     def set_line_width_scale_factor(self, sf: float) -> None:
         self.line_width_scale_factor = sf
@@ -397,7 +392,9 @@ class DirectionalMultiPairFeature(MultiPairFeature):
 
 class ArrowFeature(DirectionalMultiPairFeature):    
 
-    def render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+    line_width_scale_factor: float = 1
+
+    def _render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
         
         # NOTE - To clarify the mentions of "start" and "end" of an arrow
         # This side of the arrow is the "end" <| This side is the "start"
@@ -410,7 +407,7 @@ class ArrowFeature(DirectionalMultiPairFeature):
         MAX_PERCENT_AS_ARROW_HEAD = 0.50
         ARROW_LENGTH_CAP = p_total_base_pairs * 0.015
         max_arrow_length = circular_length(self.get_start_pair(), self.get_end_pair(), p_total_base_pairs) * MAX_PERCENT_AS_ARROW_HEAD
-        length_of_arrow_head = max_arrow_length if max_arrow_length < ARROW_LENGTH_CAP else ARROW_LENGTH_CAP        
+        length_of_arrow_head = max_arrow_length if max_arrow_length < ARROW_LENGTH_CAP else ARROW_LENGTH_CAP
 
 
         #======= Determining the arrow start and end ========
@@ -462,6 +459,7 @@ class ArrowFeature(DirectionalMultiPairFeature):
             rectangle_end_pair = self.get_end_pair()
             
         rectangle = RectangleFeature(self.name, rectangle_start_pair, rectangle_end_pair)
+        rectangle.set_line_width_scale_factor(self.line_width_scale_factor)
         rectangle.set_color(self.get_color())
         # Prevent labelling inside the rectangles render, as rectangle_end_pair is not
         # the actual end_pair of the whole feature, so prevent labelling and control it below
@@ -471,12 +469,10 @@ class ArrowFeature(DirectionalMultiPairFeature):
         if "none" not in list(dict.fromkeys(self.label_style)):
             labels = self._get_feature_labels(p_total_base_pairs, self.get_start_pair(), self.get_end_pair())   
             for label in labels:
-                    label.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
+                    label._render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
 
-        rectangle.render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
+        rectangle._render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
 
+    def set_line_width_scale_factor(self, sf: float) -> None:
+        self.line_width_scale_factor = sf
 
-class CircleFeature(MultiPairFeature):
-
-    def __init__(self, start_pair: int, end_pair: int) -> None:
-        super().__init__(start_pair, end_pair)

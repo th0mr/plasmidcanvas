@@ -14,6 +14,7 @@ matplotlib = "^3.8.3"
 ipykernel = "^6.29.3"
 sphinx = "^7.2.6"
 sphinx-simplepdf = "^1.6.0"
+sphinx_rtd_theme = "^2.0.0"
 
 [build-system]
 requires = ["poetry-core"]
