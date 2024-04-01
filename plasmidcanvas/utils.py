@@ -1,5 +1,6 @@
 import numpy as np
 
+DEFAULT_LABEL_FONT_SIZE: str = 7
 
 def to_counter_clockwise(clockwise_angle):
     counterclockwise_angle = (90 - clockwise_angle) % 360

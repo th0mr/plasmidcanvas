@@ -6,6 +6,7 @@ import numpy as np
 from utils import circular_length, circular_midpoint, to_counter_clockwise
 
 from curvedtext import CurvedText
+from utils import DEFAULT_LABEL_FONT_SIZE
 
 #from plasmidcanvas.curvedtext import CurvedText
 
@@ -39,7 +40,7 @@ class Feature:
 
 class MultiPairFeature(Feature):
 
-    DEFAULT_FONT_SIZE: int = 7
+    _label_font_size: int = DEFAULT_LABEL_FONT_SIZE
 
     start_pair: int
     end_pair: int
@@ -75,6 +76,12 @@ class MultiPairFeature(Feature):
     def set_orbit(self, orbit: int) -> None:
         self._orbit = orbit
 
+    def get_label_font_size(self) -> int:
+        return self._label_font_size
+    
+    def set_label_font_size(self, font_size: int) -> None:
+        self._label_font_size = font_size
+
     def add_label_style(self, label_style: str) -> None:
         if label_style not in self.SUPPORTED_LABEL_STYLES:
             raise ValueError(f"The label style '{label_style}' is not supported. Only the following are supported {self.SUPPORTED_LABEL_STYLES}")
@@ -96,7 +103,6 @@ class MultiPairFeature(Feature):
         # If all styles are valid, replace the style array with the given one
         self.label_style = label_styles
             
-    # TODO - Rethink how labelling works
     def _get_feature_labels(self, p_total_base_pairs: int, start_pair: int = None, end_pair: int =None, styles: list[str]=None) -> None:
 
         # Passing in values for start_pair and end_pair that are not None allows us to
@@ -117,6 +123,7 @@ class MultiPairFeature(Feature):
                 label_text = f"{self.get_name()}"
                 label = CurvedMultiPairLabel(label_text, start_pair, end_pair)
                 label.set_orbit(self.get_orbit())
+                label.set_font_size(self._label_font_size)
                 labels.append(label)
             
             elif style == "off-circle":
@@ -127,6 +134,7 @@ class MultiPairFeature(Feature):
                 label = SinglePairLabel(label_text, label_base_pair_location)
                 label._orbit_ofset = self.get_orbit()
                 label.set_line_color(self.color)
+                label.set_font_size(self._label_font_size)
                 label.set_font_color(self.color)
                 labels.append(label)
 
@@ -149,7 +157,7 @@ class SinglePairFeature(Feature):
 
 
 class LabelBase():
-    DEFAULT_FONT_SIZE: int = 7
+    DEFAULT_FONT_SIZE: int = DEFAULT_LABEL_FONT_SIZE
     DEFAULT_FONT_COLOR: str = "black"
 
     label_text: str = "UntitledLabel"
@@ -218,7 +226,7 @@ class SinglePairLabel(SinglePairFeature, LabelBase):
         # Using zorder=3 to bring the line and label forward so they dont get covered up by other overlapping features
 
         ax.plot([start_xy[0], end_xy[0]], [start_xy[1], end_xy[1]], color=self.get_line_color(), alpha=self._DEFAULT_LINE_ALPHA, zorder=3)
-        ax.text(x=end_xy[0], y=end_xy[1], s=self.get_label_text(), fontsize=self.DEFAULT_FONT_SIZE,
+        ax.text(x=end_xy[0], y=end_xy[1], s=self.get_label_text(), fontsize=self.get_font_size(),
                 color=self.font_color, horizontalalignment=align, verticalalignment="center", zorder=3)
 
     def get_line_color(self) -> str:
@@ -360,7 +368,11 @@ class RectangleFeature(MultiPairFeature):
         # TODO - Support on / off the circle placement by moving radius
 
         # 3 - Place the wedge
-        rectangle = Wedge(center=p_center, r=p_radius, theta1=theta_1, theta2=theta_2, width=(p_line_width * self.line_width_scale_factor), color=self.color)
+
+        # Amount to stretch the arrow outwards / inwards to achieve the line width scale effect
+        adjust_amount = ((p_line_width * self.get_line_width_scale_factor()) - p_line_width) / 2
+        line_width_adjusted_radius = p_radius + adjust_amount
+        rectangle = Wedge(center=p_center, r=line_width_adjusted_radius, theta1=theta_1, theta2=theta_2, width=(p_line_width * self.get_line_width_scale_factor()), color=self.color)
         ax.add_patch(rectangle)
 
         # Labelling 
@@ -371,6 +383,10 @@ class RectangleFeature(MultiPairFeature):
             for label in labels:
                 label._render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
     
+
+    def get_line_width_scale_factor(self) -> float:
+        return self.line_width_scale_factor
+
     def set_line_width_scale_factor(self, sf: float) -> None:
         self.line_width_scale_factor = sf
 
@@ -433,12 +449,15 @@ class ArrowFeature(DirectionalMultiPairFeature):
 
         triangle_front_xy = ((p_center[0]+p_radius-(p_line_width/2))*np.sin(angle_of_arrow_end_radians),
                              (p_center[1]+p_radius-(p_line_width/2))*np.cos(angle_of_arrow_end_radians))
+
+        # Amount to stretch the arrow outwards / inwards to achieve the line width scale effect
+        adjust_amount = ((p_line_width * self.get_line_width_scale_factor()) - p_line_width) / 2
+
+        triangle_point_inner_circle_xy = (((p_center[0]+p_radius-p_line_width-adjust_amount)*np.sin(angle_of_arrow_start_radians)),
+                                          ((p_center[1]+p_radius-p_line_width-adjust_amount)*np.cos(angle_of_arrow_start_radians)))
         
-        triangle_point_inner_circle_xy = ((p_center[0]+p_radius-p_line_width)*np.sin(angle_of_arrow_start_radians),
-                                          (p_center[1]+p_radius-p_line_width)*np.cos(angle_of_arrow_start_radians))
-        
-        triangle_point_outer_circle_xy = ((p_center[0]+p_radius)*np.sin(angle_of_arrow_start_radians),
-                                          (p_center[1]+p_radius)*np.cos(angle_of_arrow_start_radians))
+        triangle_point_outer_circle_xy = (((p_center[0]+p_radius+adjust_amount)*np.sin(angle_of_arrow_start_radians)),
+                                          ((p_center[1]+p_radius+adjust_amount)*np.cos(angle_of_arrow_start_radians)))
 
         triangle_points = [triangle_front_xy, triangle_point_inner_circle_xy, triangle_point_outer_circle_xy]
 
@@ -472,6 +491,9 @@ class ArrowFeature(DirectionalMultiPairFeature):
                     label._render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
 
         rectangle._render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
+
+    def get_line_width_scale_factor(self) -> float:
+        return self.line_width_scale_factor
 
     def set_line_width_scale_factor(self, sf: float) -> None:
         self.line_width_scale_factor = sf

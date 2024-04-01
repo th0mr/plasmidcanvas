@@ -7,7 +7,9 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Circle, Wedge
 import numpy as np
 
-from feature import CurvedMultiPairLabel, Feature, LabelBase, MultiPairFeature, RectangleFeature, ArrowFeature, RestrictionSite, SinglePairLabel
+from feature import Feature, LabelBase, MultiPairFeature, RectangleFeature, ArrowFeature, RestrictionSite, SinglePairLabel
+from utils import DEFAULT_LABEL_FONT_SIZE
+
 
 class Plasmid:
 
@@ -17,7 +19,6 @@ class Plasmid:
     _DEFAULT_PLASMID_LINE_WIDTH_SF: float = 1
     _DEFAULT_PLASMID_NAME: str = "Untitled Plasmid"
     _DEFAULT_PLASMID_COLOR: str = "grey"
-    _DEFAULT_ON_LABEL_FONT_SIZE: int = 7
 
     _SUPPORTED_MARKER_STYLES = ["auto", "n_markers", "none"]
     _DEFAULT_MARKER_STYLE = "auto"
@@ -42,7 +43,7 @@ class Plasmid:
     _tick_style: str = _DEFAULT_TICK_STYLE
     _plasmid_color: str = _DEFAULT_PLASMID_COLOR
     _tick_color: str = _DEFAULT_PLASMID_COLOR
-    _on_circle_label_font_size: int = _DEFAULT_ON_LABEL_FONT_SIZE
+    _feature_label_font_size: int = DEFAULT_LABEL_FONT_SIZE
 
     def __init__(self, name: str, base_pairs: int) -> None:
         self.set_base_pairs(int(base_pairs))
@@ -102,21 +103,23 @@ class Plasmid:
 
         for feature in sorted_multi_pair_features:
 
+            # A quick check to see if the feature's font size has changed from the default, if not, apply Plasmid
+            # object's feature_label_font_size to the feature prior to rendering
+            # Otherwise leave the font size as is, as it means the user has manually adjusted it
+
+            if feature.get_label_font_size() == DEFAULT_LABEL_FONT_SIZE:
+                feature.set_label_font_size(self.get_feature_label_font_size())
+
             pre_placement_orbit = orbit
-            # orbit = 0
 
-            # Deal with multi-pair feature overlaps that are not labels, as labels can overlap with features
-            if issubclass(feature.__class__, MultiPairFeature):
-
-                # Get all current placed multi pair features
-                sorted_placed_multi_pair_features = sorted([feature for feature in placed_features if issubclass(feature.__class__, MultiPairFeature)],
-                                                            key=lambda feature:feature.start_pair)
-                for potential_overlap in sorted_placed_multi_pair_features:
-                    # Check if start_pair of feature lies between the start and end of the potential overlap feature on the same orbit
-                    if (potential_overlap.get_start_pair() <= feature.get_start_pair() <= potential_overlap.get_end_pair()
-                        and potential_overlap.get_orbit() == orbit):
-                        print(f"adjusting {feature.name}")
-                        orbit += 1
+            # Get all current placed multi pair features
+            sorted_placed_multi_pair_features = sorted([feature for feature in placed_features if issubclass(feature.__class__, MultiPairFeature)],
+                                                        key=lambda feature:feature.start_pair)
+            for potential_overlap in sorted_placed_multi_pair_features:
+                # Check if start_pair of feature lies between the start and end of the potential overlap feature on the same orbit
+                if (potential_overlap.get_start_pair() <= feature.get_start_pair() <= potential_overlap.get_end_pair()
+                    and potential_overlap.get_orbit() == orbit):
+                    orbit += 1
 
             if pre_placement_orbit == orbit:
                 # Reset orbit to 0
@@ -307,22 +310,37 @@ class Plasmid:
     def set_tick_color(self, tick_color: str) -> None:
         self._tick_color = tick_color
 
+    def get_color(self) -> str:
+        return self._plasmid_color
+
+    def set_color(self, color: str) -> None:
+        self._plasmid_color = color
+
+    def get_feature_label_font_size(self) -> int:
+        return self._feature_label_font_size
+
+    def set_feature_label_font_size(self, feature_label_font_size: int) -> None:
+        self._feature_label_font_size = feature_label_font_size
+
 # ## TESTING
     
 
 # Define a plasmid of X base pairs long, with a name
 plasmid = Plasmid("pBR322", 4361)
 plasmid.set_marker_style("auto")
+plasmid.set_feature_label_font_size(10)
 
 # Adding an arrow
 # for pBR322 this is TcR
 tcr = ArrowFeature("TcR", 86,1276)
 # # # Customise the thinkness of the line relative to the thickness of the plasmid circle
 tcr.set_line_width_scale_factor(1.5)
+tcr.set_label_font_size(5)
 plasmid.add_feature(tcr)
 
 # # Add rop protein for pBR322
 rop = ArrowFeature("rop", 1915,2106)
+rop.set_line_width_scale_factor(1.25)
 plasmid.add_feature(rop)
 
 # # Add a rectangle, base of mobility for pBR322
@@ -337,6 +355,7 @@ plasmid.add_feature(ori)
 # # Add ampr - technically this arrow should have a portion segmented for its signal sequence
 ampr = ArrowFeature("ampr", 3293, 4153, -1)
 ampr.color = "red"
+ampr.set_line_width_scale_factor(0.5)
 plasmid.add_feature(ampr)
 
 # # Add ampr promoter as an arrow
@@ -344,51 +363,51 @@ ampr_promoter = ArrowFeature("ampr promoter", 4154, 4258, -1)
 ampr_promoter.color = "darkred"
 plasmid.add_feature(ampr_promoter)
 
-overlapping = ArrowFeature("OLF", 3500, 4300)
-overlapping.color = "darkblue"
-plasmid.add_feature(overlapping)
+# overlapping = ArrowFeature("OLF", 3500, 4300)
+# overlapping.color = "darkblue"
+# plasmid.add_feature(overlapping)
 
-overlapping = ArrowFeature("OLF2", 3366, 3440)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = ArrowFeature("OLF2", 3366, 3440)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
-overlapping = ArrowFeature("OLF3", 3400, 3800)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = ArrowFeature("OLF3", 3400, 3800)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
-overlapping = ArrowFeature("OLF4", 2900, 3100)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = ArrowFeature("OLF4", 2900, 3100)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
-overlapping = ArrowFeature("OLF5", 3675, 3750)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = ArrowFeature("OLF5", 3675, 3750)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
-overlapping = RectangleFeature("OLF6", 2600, 3200)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = RectangleFeature("OLF6", 2600, 3200)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
-overlapping = RectangleFeature("OLF7", 1000, 1800)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = RectangleFeature("OLF7", 1000, 1800)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
-overlapping = ArrowFeature("OLF8", 4200, 450, direction=-1)
-overlapping.color = "darkgreen"
-plasmid.add_feature(overlapping)
+# overlapping = ArrowFeature("OLF8", 4200, 450, direction=-1)
+# overlapping.color = "darkgreen"
+# plasmid.add_feature(overlapping)
 
 
-restriction_site_1 = RestrictionSite("BamHI", 375)
-restriction_site_2 = RestrictionSite("BfuAI - BspMI", 1054)
-restriction_site_3 = RestrictionSite("Bpu10I", 1581)
-restriction_site_4 = RestrictionSite("AflIII - PciI", 2473)
-restriction_site_5 = RestrictionSite("AhdI", 3366)
+# restriction_site_1 = RestrictionSite("BamHI", 375)
+# restriction_site_2 = RestrictionSite("BfuAI - BspMI", 1054)
+# restriction_site_3 = RestrictionSite("Bpu10I", 1581)
+# restriction_site_4 = RestrictionSite("AflIII - PciI", 2473)
+# restriction_site_5 = RestrictionSite("AhdI", 3366)
 
 # Add the sites to the plasmid
-plasmid.add_feature(restriction_site_1)
-plasmid.add_feature(restriction_site_2)
-plasmid.add_feature(restriction_site_3)
-plasmid.add_feature(restriction_site_4)
-plasmid.add_feature(restriction_site_5)
+# plasmid.add_feature(restriction_site_1)
+# plasmid.add_feature(restriction_site_2)
+# plasmid.add_feature(restriction_site_3)
+# plasmid.add_feature(restriction_site_4)
+# plasmid.add_feature(restriction_site_5)
 
 # plasmid.add_feature(CurvedMultiPairLabel("TcR LOOOOOOOOOONG", 86, 1210))
 # plasmid.add_feature(CurvedMultiPairLabel("rop", 1915, 2040))
