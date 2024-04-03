@@ -1,4 +1,5 @@
-# plasmidcanvas
-A simple python plasmid map creator
+# plasmidcanvas - A simple Python plasmid map creator
 
-work is being done on the "develop" branch
+plasmidcanvas is a python package to facilitate the creation of plasmid map illustrations.
+
+TODO - Add link to readthedocs

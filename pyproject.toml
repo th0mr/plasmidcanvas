@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "plasmidcanvas"
+version = "0.1.0"
+description = "A graphics package for creating customised plasmid maps"
+authors = ["th0mr <thomrobinson76@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/th0mr/plasmidcanvas"
+keywords = ["plasmid", "plasmidmap", "biology", "microbiology"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+matplotlib = "^3.8.3"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.3"
+sphinx = "^7.2.6"
+sphinx-simplepdf = "^1.6.0"
+sphinx_rtd_theme = "^2.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
