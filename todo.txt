@@ -1,1 +1,0 @@
-Line width scale factor for rectangle and arrow

@@ -1,10 +1,12 @@
 [tool.poetry]
 name = "plasmidcanvas"
 version = "0.1.0"
-description = "A Python graphics package for creating customised plasmid maps"
+description = "A graphics package for creating customised plasmid maps"
 authors = ["th0mr <thomrobinson76@gmail.com>"]
-license = "MIT License"
+license = "MIT"
 readme = "README.md"
+repository = "https://github.com/th0mr/plasmidcanvas"
+keywords = ["plasmid", "plasmidmap", "biology", "microbiology"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
