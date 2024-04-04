@@ -380,12 +380,13 @@ class Plasmid:
         """
         # Check if the feature to be added is out of bounds
         if issubclass(feature.__class__, MultiPairFeature):
-            if feature.get_end_pair() > self.get_base_pairs:
+            if feature.get_end_pair() > self.get_base_pairs():
                 raise ValueError(f"""Feature {feature.get_name()} with end pair = {feature.get_end_pair()} 
                                    is out of bounds for a Plasmid of size {self.get_base_pairs()}""")
         if issubclass(feature.__class__, SinglePairFeature):
-            raise ValueError(f"""Feature {feature.get_name()} with base pair = {feature.get_base_pair()} 
-                                is out of bounds for a Plasmid of size {self.get_base_pairs()}""")
+            if feature.get_base_pair() > self.get_base_pairs():
+                raise ValueError(f"""Feature {feature.get_name()} with base pair = {feature.get_base_pair()} 
+                                    is out of bounds for a Plasmid of size {self.get_base_pairs()}""")
         
         self._features.append(feature)
 
@@ -564,7 +565,7 @@ class Plasmid:
                 "auto" (default) - Automatically apply markers at a reasonable marker interval based on the plasmid size
 
                 "n_markers" - Place n equidistant markers around the circle. The default is 16, unless changed with Plasmid.set_number_of_markers()
-                
+
                 "none" - No markers added to the circle 
 
         Raises

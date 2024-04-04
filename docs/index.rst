@@ -10,5 +10,8 @@ Welcome to plasmidcanvas's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   installation_and_usage
+   tutorials
+
 
 

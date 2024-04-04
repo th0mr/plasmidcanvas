@@ -1,39 +1,35 @@
-plasmidcanvas 0.1.0 - Beta install and usage
-============================================
-
-If you are seeing this, thank you for deciding to take  a look at the beta version of plasmidcanvas! 
-This document gives installation and usage instructions for the package as well as full examples of plasmid maps and the code to generate them.
-
 What is plasmidcanvas?
 ==========================
 
-plasmidcanvas is a work in progress python graphics package designed for producing customised plasmid maps from scratch. 
+plasmidcanvas is a Python graphics package designed for producing customised plasmid maps. 
 
-**Current Features as of v0.1.0**
+**Top level overview of plasmidcanvas' current features as of v1.0.0**
 
 * Directional arrows and rectangles to represent features of a plasmid.
-* Support for restriction sites
-* Support for arbitrary labels
+* Support for restriction sites.
+* Support for arbitrary labels.
 * Support for overlapping features by automatically moving features inwards.
-* Two types of plasmid base pair tick labels
+* Support for base pair "ticks".
+* Two types of plasmid base pair tick labels:
     * auto - The circle is automatically labelled using the most suitable tick intervals.
     * n_labels - The circle is given n labels, evenly spaced around the plasmid circle.
-* Two types of feature labels
+* Two types of feature labels:
     * off-circle - A label is placed outside the plasmid circle, pointing at the base pair / feature of interest.
-    * on-circle (curved text) - A label is placed on a feature and curves around the circle with the feature. **Work in progress!**
+    * on-circle (curved text) - A label is placed on a feature and curves around the circle with the feature.
+* Plasmids can be saved to a variety of filetypes e.g. png, pdf, ps, eps and svg.
 
-Feedback
-========
+Bugs, feature requests and contributing
+=======================================
+## How Can I Contribute?
+If you are a user who would like to contribute to the project, please refer to the CONTRIBUTING.md document.
 
-It would be massively appreciated if you could give me any feedback about this package as you use it.
-This could be:
+### Reporting Bugs
 
-* Problems with installing or using the package
-* Issues with the generated plasmid maps
-* Suggestions for features
-* Bugs or inaccuracies
+If you encounter a bug or unexpected behavior, please search the [existing issues](https://github.com/th0mr/plasmidcanvas/issues) to see if it has already been reported. If not, please [open a new issue](https://github.com/th0mr/plasmidcanvas/issues/new) and provide a clear description of the problem along with steps to reproduce it.
 
-Please provide feedback here: https://docs.google.com/forms/d/e/1FAIpQLSdVYBA13t9LZIU6dybO8jgwuylDPQiHB0td0g4EZwGpCSjgIQ/viewform?usp=sf_link
+### Requesting Features
+
+If you have a feature request or an enhancement idea, please search the [existing issues](https://github.com/th0mr/plasmidcanvas/issues) to see if it has already been requested. If not, please [open a new issue](https://github.com/th0mr/plasmidcanvas/issues/new) and describe the feature or enhancement you'd like to see.
 
 Alternatively, if you want to send me an email please contact thom.robinson@york.ac.uk. I am always happy to talk about this project.
 
@@ -54,6 +50,12 @@ You now have the package installed! If you want to double check it has installed
 
 Usage
 =====
+
+This document contains example usage of the package through tutorials, options and example. **However we advise that users take a look at the api documentation for more
+detail on how methods work and their parameters. See API Reference on the sidebar**
+
+Tutorial
+=========
 
 These steps run through creating a basic, unstyled plasmid map. These examples can be extended using the techniques shown here and
 in the "Customising your plasmid map" section later on.
@@ -116,16 +118,12 @@ Currently this is only tested for .png and .pdf but any matplotlib supported fil
 
 
 **6 - Run your script and view the file example_plasmid.png** 
-It should be in the same directory as your Python script. However, you may notice it looks a little bit **boring**... See the section below on customising you map to avoid this.
-
-Note - If you dont feel like adding in all the details for a plasmid, there is a code example in the Examples section later.
-Example 1 has the code to generate a uncustomised version of pBR322. 
+It should be in the same directory as your Python script. However, you may notice it looks a little bit **boring**... See the section below focuses on customising your map to avoid this.
 
 Customising your plasmid map
 ============================
 
 Below are some examples of how you can customise your plasmid maps and its features at a fine grained level.
-In the future there will be support for simpler ways to apply "styles" to your plasmid map / feature types.
 
 Changing the color of a feature
 -------------------------------
@@ -189,7 +187,16 @@ Note that this will increase in line width will be passed down to all features a
     plasmid = Plasmid("myplasmid", 5000)
     # Create a new line width that is 1.25x larger than before
     new_line_width = plasmid.get_plasmid_line_width() * 1.25
-    plasmid.set_plasmid_line_width()
+    plasmid.set_plasmid_line_width(new_line_width)
+
+Or, apply a scale factor to the line width
+
+.. code-block:: python
+
+    plasmid = Plasmid("myplasmid", 5000)
+    # Create a new line width that is 1.25x larger than before
+    new_line_width_sf = plasmid.get_plasmid_line_width_sf() * 1.25
+    plasmid.set_plasmid_line_width_sf(new_line_width_sf)
 
 Changing the base pair tick marker style for a Plasmid
 ------------------------------------------------------
@@ -220,6 +227,33 @@ This may lead to some text clipping into labels, but the option is here if you n
     plasmid.set_marker_distance_sf(1.25)
 
 
+Using on-circle labelling (curved text)
+---------------------------------------
+
+To swap a label to use on-circle labelling, a new style array must be passed to the feature. If your feature is too small to fit the label on, it wont be placed.
+
+Note - it is possible to have both on-cirlce and off-circle styles by passing in ["on-circle", "off-circle"]
+
+.. code-block:: python
+
+    ori = ArrowFeature("ori", 2534, 3122, direction=-1)
+    ori.set_label_styles(["on-circle"])
+    plasmid.add_feature(ori)
+
+Chaning font size for all labels
+--------------------------------
+
+If you wish to easily change the font size on all labels associated with the Plasmid and its Features, it can be set with Plasmid.set_label_font_size()
+
+Note - You can still alter the size of any specific label manually, e.g. label.set_font_size() and that wont be overridden by this setting
+i.e. any manually changed label size wont have the global font size applied to it.
+
+.. code-block:: python
+
+    plasmid = Plasmid("myplasmid", 5000)
+    # Accepts a pt value
+    plasmid.set_label_font_size(5)
+
 Example 1 - Creating a map of pBR322
 ====================================
 
@@ -229,8 +263,8 @@ The following code shows a concrete example of producing a basic, unstyled map o
 
     # An example showing how to build pBR322 in plasmidcanvas
 
-    from plasmidcanvas.plasmid import *
-    from plasmidcanvas.feature import *
+    from plasmidcanvas.plasmid import Plasmid
+    from plasmidcanvas.feature import ArrowFeature, RectangleFeature, RestrictionSite
 
     plasmid = Plasmid("pBR322", 4361)
 
@@ -277,6 +311,9 @@ Example 2 - Demonstrating overlapping features on pBR322
 This is an example to show how overlapping features look in plasmidcanvas
 
 .. code-block:: python
+
+    from plasmidcanvas.plasmid import Plasmid
+    from plasmidcanvas.feature import ArrowFeature, RectangleFeature, RestrictionSite
 
     plasmid = Plasmid("pBR322", 4361)
 
@@ -334,23 +371,68 @@ This is an example to show how overlapping features look in plasmidcanvas
     overlapping.set_color("darkgreen")
     plasmid.add_feature(overlapping)
 
-    plasmid.save_to_file("myplasmid")
+    plasmid.save_to_file("myplasmid.png")
 
 
 .. image:: usage_images/pBR322_overlapping.png
 
-Future of the package
-=====================
+Example 3 - pBR322 with curved text, mixed labels and more
+==========================================================
 
-Upcoming Features:
-    * Full automated api style documentation and extended
-    * More shapes!
-    * More labelling styles - curved text, inside the circle labelling, multiple labels per feature
-    * Base pair ticks
-    * Extentions to the feature types e.g. allowing you to add Promoter instead of an ArrowFeature
-    * Plasmid wide styling - i.e applying a style to all elements, sort of like a theme
-    * Feature wide styling - i.e applying the same style to all of a type of feature
 
-If you want to know any more please contact thom.robinson@york.ac.uk
+.. code-block:: python
 
-Remember to fill out the feedback form https://docs.google.com/forms/d/e/1FAIpQLSdVYBA13t9LZIU6dybO8jgwuylDPQiHB0td0g4EZwGpCSjgIQ/viewform?usp=sf_link
+    from plasmidcanvas.plasmid import Plasmid
+    from plasmidcanvas.feature import ArrowFeature, RectangleFeature, RestrictionSite
+
+    # Define a plasmid of X base pairs long, with a name
+    plasmid = Plasmid("pBR322", 4361)
+    plasmid.set_marker_style("auto")
+    plasmid.set_feature_label_font_size(7)
+    plasmid.set_plasmid_line_width_sf(1.25)
+
+    # Adding tcr
+    tcr = ArrowFeature("tcr", 86,1276)
+    plasmid.add_feature(tcr)
+
+    # Add rop protein for pBR322
+    rop = ArrowFeature("rop", 1915,2106)
+    rop.set_line_width_scale_factor(1.5)
+    rop.set_color("purple")
+    plasmid.add_feature(rop)
+
+    # Add a rectangle, base of mobility for pBR322
+    bom = RectangleFeature("bom", 2208,2348)
+    plasmid.add_feature(bom)
+
+    # Add ori
+    ori = ArrowFeature("ori", 2534, 3122, -1)
+    ori.set_color("orange")
+    plasmid.add_feature(ori)
+
+    # # Add ampr
+    ampr = ArrowFeature("ampr", 3293, 4153, -1)
+    ampr.set_color("red")
+    plasmid.add_feature(ampr)
+
+    for feature in plasmid.get_features():
+        feature.set_label_styles(["on-circle"])
+
+    # # Add ampr promoter as an arrow
+    ampr_promoter = ArrowFeature("ampr promoter", 4154, 4258, -1)
+    ampr_promoter.set_color("darkred")
+
+    ampr_promoter.set_line_width_scale_factor(0.75)
+    plasmid.add_feature(ampr_promoter)
+
+    # Add the sites to the plasmid
+    plasmid.add_feature(RestrictionSite("BamHI", 375))
+    plasmid.add_feature(RestrictionSite("BfuAI - BspMI", 1054))
+    plasmid.add_feature(RestrictionSite("Bpu10I", 1581))
+    plasmid.add_feature(RestrictionSite("AflIII - PciI", 2473))
+    plasmid.add_feature(RestrictionSite("AhdI", 3366))
+
+    # Plot the plasmid
+    plasmid.save_to_file("myplasmid.png")
+
+.. image:: usage_images/pBR322_curved.png

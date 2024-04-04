@@ -2,9 +2,6 @@
 from plasmidcanvas.plasmid import Plasmid
 from plasmidcanvas.feature import ArrowFeature, RectangleFeature, RestrictionSite
 
-# ## TESTING
-    
-
 # Define a plasmid of X base pairs long, with a name
 plasmid = Plasmid("pBR322", 4361)
 plasmid.set_marker_style("auto")
