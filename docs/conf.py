@@ -20,7 +20,7 @@ extensions = [
 ]
 
 # What to document with autoapi
-autoapi_dirs = ['../plasmidcanvas']
+autoapi_dirs = ['../src/plasmidcanvas']
 autoapi_options = [ 'members', 'undoc-members', 'show-inheritance', 'show-module-summary', 'special-members', 'imported-members', 'show-inheritance-diagram' ]
 autoapi_python_class_content = 'both'
 

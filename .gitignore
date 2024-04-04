@@ -54,3 +54,6 @@ docs/_build
 
 # venv
 .venv
+
+# Extras
+test_output

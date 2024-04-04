@@ -17,4 +17,4 @@ Uploading a new version of plasmidcanvas to pypi
 Updating the pypi documentation in readthedocs
 ==============================================
 
-This should be done automatically when a change is made to the documentation on master.
+This should be done automatically when a change is made to the documentation on master. Verify this at https://plasmidcanvas.readthedocs.io/en/latest/

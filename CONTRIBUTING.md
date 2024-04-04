@@ -27,7 +27,9 @@ git clone https://github.com/th0mr/plasmidcanvas.git
 ```sh
 git checkout -b feature-name
 ```
-5. Make and test your fix / improvement and commit them to your branch. Please adhere to the code style guidelines listed later in this document.
+5. Make and test your fix / improvement and commit them to your branch. Please adhere to the code style guidelines listed later in this document. 
+Tests can be found in /tests and exist as a convenience method to make and inspect a few plasmids that are used in the usage guide, test images are
+saved to /tests/test_output to be manually inspected.
 ```sh
 git commit -am "Add new feature or fix bug"
 ```

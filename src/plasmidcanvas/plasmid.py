@@ -72,6 +72,7 @@ class Plasmid:
             raise ValueError("The number of base pairs for a Plasmid must be greater than zero")
         self.set_base_pairs(int(base_pairs))
         self.set_name(name)
+        self._features = []
 
     def _degrees_to_basepair(self, degree: float) -> int:
         """Takes a degree value, returns a base pair that is closest to that degree"""        
