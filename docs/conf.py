@@ -5,11 +5,6 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-import sys
-import os
-
-# Include the package in the path
-sys.path.insert(0, os.path.abspath('../../plasmidcanvas'))
 
 project = 'plasmidcanvas'
 copyright = '2024, Thom Robinson'
@@ -21,15 +16,20 @@ release = '0.1.0'
 
 extensions = [
     'sphinx.ext.napoleon',
+    'autoapi.extension'
 ]
- 
+
+# What to document with autoapi
+autoapi_dirs = ['../plasmidcanvas']
+autoapi_options = [ 'members', 'undoc-members', 'show-inheritance', 'show-module-summary', 'special-members', 'imported-members', 'show-inheritance-diagram' ]
+autoapi_python_class_content = 'both'
+
 napoleon_google_docstring = False
 napoleon_use_param = False
 napoleon_use_ivar = True
 
 templates_path = ['_templates']
 exclude_patterns = []
-
 
 
 # -- Options for HTML output -------------------------------------------------

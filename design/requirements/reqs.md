@@ -37,4 +37,3 @@ Desireable Requirements -
 SR_D_1 - Users should be able to create a plasmid from a genbank files
 SR_D_2 - The user should be able to export plasmid maps to a range of file types beyond PDF, SVG and PNG
 SR_D_3 - The user should be able to plot multiple plasmids on the same graph
-SR_D_4 -  

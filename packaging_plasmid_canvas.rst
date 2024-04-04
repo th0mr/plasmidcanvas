@@ -17,4 +17,4 @@ Uploading a new version of plasmidcanvas to pypi
 Updating the pypi documentation in readthedocs
 ==============================================
 
-TODO
+This should be done automatically when a change is made to the documentation on master.

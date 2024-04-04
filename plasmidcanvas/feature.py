@@ -3,40 +3,102 @@ from matplotlib.axes import Axes
 from matplotlib.patches import FancyArrowPatch, Polygon, RegularPolygon, Wedge
 import numpy as np
 
-from plasmidcanvas.utils import circular_length, circular_midpoint, to_counter_clockwise
-from plasmidcanvas.curvedtext import CurvedText
-from plasmidcanvas.utils import DEFAULT_LABEL_FONT_SIZE
+from plasmidcanvas._utils import circular_length, circular_midpoint, to_counter_clockwise
+from plasmidcanvas._curvedtext import CurvedText
+from plasmidcanvas._utils import DEFAULT_LABEL_FONT_SIZE
 
 # ==================================
 # Abstract Feature Classes
 
 
 class Feature:
-    DEFAULT_COLOR: str = "#069AF3"
+    """
+    Abstract base class representing a feature
+    """
+    _DEFAULT_COLOR: str = "#069AF3"
 
     name: str
-    color: str = DEFAULT_COLOR
+    color: str = _DEFAULT_COLOR
 
     def __init__(self, name: str) -> None:
+        """
+        Initializes the Feature object.
+
+        Parameters
+        ----------
+        name : str
+            The name of the feature.
+        """
         self.set_name(name)
 
     def _render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+        """
+        Abstract method to render the feature on a matplotlib Axes object.
+
+        Parameters
+        ----------
+        ax : Axes
+            The matplotlib Axes object to render the feature on.
+        p_total_base_pairs : int
+            The total number of base pairs on the plasmid.
+        p_center : tuple(float, float)
+            The center coordinates of the plasmid.
+        p_radius : float
+            The radius length of the plasmid.
+        p_line_width : float
+            The line width of the plasmid circle.
+        """
         pass
 
     def get_name(self) -> str:
+        """
+        Get the name of the feature.
+
+        Returns
+        -------
+        str
+            The name of the feature.
+        """
         return self.name
 
     def set_name(self, name: str):
+        """
+        Set the name of the feature.
+
+        Parameters
+        ----------
+        name : str
+            The name to set for the feature.
+        """
         self.name = name
 
     def get_color(self) -> str:
+        """
+        Get the color of the feature.
+
+        Returns
+        -------
+        str
+            The color of the feature.
+        """
         return self.color
 
     def set_color(self, color: str) -> None:
+        """
+        Set the color of the feature.
+
+        Parameters
+        ----------
+        color : str
+            The color to set for the feature. Use words e.g "red" or hex values e.g. "#FFFFFF"
+        """
         self.color = color
 
 
 class MultiPairFeature(Feature):
+    """
+    An abstract Feauture type that spans multiple base pairs
+    """
     _label_font_size: int = DEFAULT_LABEL_FONT_SIZE
 
     start_pair: int
@@ -48,53 +110,157 @@ class MultiPairFeature(Feature):
     _orbit: int = 0
 
     def __init__(self, name: str, start_pair: int, end_pair: int) -> None:
+        """
+        Initializes the MultiPairFeature object.
+
+        Parameters
+        ----------
+        name : str
+            The name of the feature.
+        start_pair : int
+            The starting base pair of the feature.
+        end_pair : int
+            The ending base pair of the feature.
+        """
         super().__init__(name)
         self.set_start_pairs(start_pair)
         self.set_end_pairs(end_pair)
 
     def length(self) -> int:
+        """
+        Calculates and returns the length of the feature.
+        i.e. end_pair - start_pair
+
+        Returns
+        -------
+        int
+            The length of the feature.
+        """
         return self.get_end_pair() - self.get_start_pair()
 
     def get_start_pair(self) -> int:
+        """
+        Get the starting base pair of the feature.
+
+        Returns
+        -------
+        int
+            The starting base pair.
+        """
         return self.start_pair
 
-    def set_start_pairs(self, start_pair) -> None:
+    def set_start_pairs(self, start_pair: int) -> None:
+        """
+        Set the starting base pair of the feature.
+
+        Parameters
+        ----------
+        start_pair
+            The starting base pair to set.
+        """
         self.start_pair = start_pair
 
     def get_end_pair(self) -> int:
+        """
+        Get the ending base pair of the feature.
+
+        Returns
+        -------
+        int
+            The ending base pair.
+        """
         return self.end_pair
 
     def set_end_pairs(self, end_pair) -> None:
+        """
+        Set the ending base pair of the feature.
+
+        Parameters
+        ----------
+        end_pair
+            The ending base pair to set.
+        """
         self.end_pair = end_pair
 
     def get_orbit(self) -> int:
+        """
+        Get the orbit of the feature.
+
+        Returns
+        -------
+        int
+            The orbit value of the feature.
+        """
         return self._orbit
 
     def set_orbit(self, orbit: int) -> None:
+        """
+        Set the orbit of the feature. Mostly used internally for overlapping features, but can be used to force features into an orbit.
+        The higher the orbit, the closer to the center of the plasmid the feature is placed. i.e orbit = 0 is the default, orbit = 4 circles four times the width of a feature closer to the center.
+
+        Parameters
+        ----------
+        orbit : int
+            The orbit value to set.
+        """
         self._orbit = orbit
 
     def get_label_font_size(self) -> int:
+        """
+        Get the font size of the labels associated with the feature.
+
+        Returns
+        -------
+        int
+            The font size of the labels.
+        """
         return self._label_font_size
 
     def set_label_font_size(self, font_size: int) -> None:
+        """
+        Set the font size of the labels associated with the feature.
+
+        Parameters
+        ----------
+        font_size : int
+            The font size to set.
+        """
         self._label_font_size = font_size
 
-    def add_label_style(self, label_style: str) -> None:
-        if label_style not in self.SUPPORTED_LABEL_STYLES:
-            raise ValueError(
-                f"The label style '{label_style}' is not supported. Only the following are supported {self.SUPPORTED_LABEL_STYLES}")
-        else:
-            if label_style not in self.label_style:
-                self.label_style.append(label_style)
-
-    def remove_label_style(self, label_style: str) -> None:
-        if label_style in self.label_style:
-            self.label_style.remove(label_style)
-
     def get_label_styles(self) -> list[str]:
+        """
+        Get the list of label styles associated with the feature.
+
+        Returns
+        -------
+        label_style : list[str]
+            The list of label styles.
+        """
         return self.label_style
 
     def set_label_styles(self, label_styles: list[str]):
+        """
+        Set the list of label styles associated with the feature.
+
+        Parameters
+        ----------
+        label_styles : list[str]
+            The list of label styles to set.
+            Currently supported styles
+
+                "on-circle" - The label is applied onto the feature using curved text. (The base pair location is not included in this labelling)
+                
+                "off-circle" - A label is placed off the circle with the name and bp range, connected by a small line
+
+        Note
+        ----
+        A plasmid can have both, one or none of the label styles applied at the same time
+
+        Raises
+        ------
+        ValueError
+            If the given label_style is not in MultiPairFeature.SUPPORTED_LABEL_STYLES as listed above.
+        """
         for style in label_styles:
             if style not in self.SUPPORTED_LABEL_STYLES:
                 raise ValueError(
@@ -104,6 +270,25 @@ class MultiPairFeature(Feature):
 
     def _get_feature_labels(self, p_total_base_pairs: int, start_pair: int = None, end_pair: int = None,
                             styles: list[str] = None) -> None:
+        """
+        Get the labels associated with the feature based off the value of label_style
+
+        Parameters
+        ----------
+        p_total_base_pairs : int
+            The total number of base pairs on the plasmid.
+        start_pair : int, optional
+            The starting base pair.
+        end_pair : int, optional
+            The ending base pair.
+        styles : list[str], optional
+            The list of label styles. Used to force the creation of a specific type of label if needed.
+
+        Returns
+        -------
+        list[Label]
+            The list of labels associated with the feature.
+        """
 
         # Passing in values for start_pair and end_pair that are not None allows us to
         # create features wherever we need, otherwise the default start_pair and end_pair will be used
@@ -144,20 +329,53 @@ class MultiPairFeature(Feature):
 
 
 class SinglePairFeature(Feature):
+    """
+    An abstract Feature class representing a Feature that relates to only a single base pair
+    """
     base_pair: int
 
     def __init__(self, name: str, base_pair: int) -> None:
+        """
+        Initializes the SinglePairFeature object.
+
+        Parameters
+        ----------
+        name : str
+            The name of the feature.
+        base_pair : int
+            The base pair associated with the feature.
+        """
         super().__init__(name)
         self.set_base_pair(base_pair)
 
     def get_base_pair(self) -> int:
+        """
+        Get the base pair associated with the feature.
+
+        Returns
+        -------
+        int
+            The base pair.
+        """
         return self.base_pair
 
     def set_base_pair(self, base_pair) -> None:
+        """
+        Set the base pair associated with the feature.
+
+        Parameters
+        ----------
+        base_pair
+            The base pair to set.
+        """
         self.base_pair = base_pair
 
 
 class LabelBase():
+    """
+    A base class for labels.
+    """
+    
     DEFAULT_FONT_SIZE: int = DEFAULT_LABEL_FONT_SIZE
     DEFAULT_FONT_COLOR: str = "black"
 
@@ -166,34 +384,92 @@ class LabelBase():
     font_size: int = DEFAULT_FONT_SIZE
 
     def __init__(self, name: str) -> None:
+        """
+        Initializes the LabelBase object.
+
+        Parameters
+        ----------
+        name : str
+            The name of the label.
+        """
         self.set_label_text(name)
 
     def get_font_color(self) -> str:
+        """
+        Get the color of the label font.
+
+        Returns
+        -------
+        str
+            The color of the label font.
+        """
         return self.font_color
 
     def set_font_color(self, font_color: str) -> None:
+        """
+        Set the color of the label font.
+
+        Parameters
+        ----------
+        font_color : str
+            The color of the label font.
+        """
         self.font_color = font_color
 
     def set_label_text(self, label_text: str) -> None:
+        """
+        Set the text of the label.
+
+        Parameters
+        ----------
+        label_text : str
+            The text of the label.
+        """
         self.label_text = label_text
 
     def get_label_text(self) -> str:
+        """
+        Get the text of the label.
+
+        Returns
+        -------
+        label_text : str
+            The text of the label.
+        """
         return self.label_text
 
     def get_font_size(self) -> int:
+        """
+        Get the size of the label font.
+
+        Returns
+        -------
+        font_size : int
+            The size of the label font.
+        """
         return self.font_size
 
     def set_font_size(self, font_size: int) -> None:
+        """
+        Set the size of the label font.
+
+        Parameters
+        ----------
+        font_size : int
+            The size of the label font.
+        """
         if font_size > 0:
             self.font_size = font_size
         else:
             raise ValueError(f"Font size cannot be negative")
-
 # ==================================
 # Concrete Feature Classes
 
 
 class SinglePairLabel(SinglePairFeature, LabelBase):
+    """
+    A class representing a label associated with a single base pair feature on a plasmid. Inheriting from both SinglePairLabel and LabelBase.
+    """
     _DEFAULT_LINE_LENGTH_SF: float = 1
     _DEFAULT_LINE_ALPHA: float = 0.3
     _DEFAULT_LINE_COLOR: str = "black"
@@ -205,11 +481,36 @@ class SinglePairLabel(SinglePairFeature, LabelBase):
     _orbit_ofset: int = 0
 
     def __init__(self, name: str, base_pair: int) -> None:
+        """
+        Initializes the SinglePairLabel object.
+
+        Parameters
+        ----------
+        name : str
+            The name of the label.
+        base_pair : int
+            The base pair associated with the label.
+        """
         super().__init__(name=name, base_pair=base_pair)
         LabelBase.__init__(self, name)
 
     def _render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+        """
+        Renders the label on the provided Axes object.
 
+        Parameters
+        ----------
+        ax : Axes
+            The matplotlib Axes object to render the label on.
+        p_total_base_pairs : int
+            The total number of base pairs in the plasmid.
+        p_center : tuple
+            The coordinates of the center of the plasmid.
+        p_radius : float
+            The radius of the plasmid.
+        p_line_width : float
+            The width of the lines connecting the label to the features.
+        """
         degrees = (self.get_base_pair() / p_total_base_pairs) * 360
         radians = np.deg2rad(degrees)
 
@@ -234,35 +535,113 @@ class SinglePairLabel(SinglePairFeature, LabelBase):
                 color=self.font_color, horizontalalignment=align, verticalalignment="center", zorder=3)
 
     def get_line_color(self) -> str:
+        """
+        Get the color of the line connecting the label to the feature.
+
+        Returns
+        -------
+        str
+            The color of the line.
+        """
         return self.line_color
 
     def set_line_color(self, line_color: str) -> None:
+        """
+        Set the color of the line connecting the label to the feature.
+
+        Parameters
+        ----------
+        line_color : str
+            The color of the line.
+        """
         self.line_color = line_color
 
     def get_line_length_sf(self) -> float:
+        """
+        Get the scale factor for the length of the line connecting the label to the feature.
+
+        Returns
+        -------
+        float
+            The scale factor for the line length.
+        """
         return self.line_length_sf
 
     def set_line_length_sf(self, line_length_sf: float) -> None:
+        """
+        Set the scale factor for the length of the line connecting the label to the feature.
+
+        Parameters
+        ----------
+        line_length_sf : float
+            The scale factor for the line length.
+        """
         self.line_length_sf = line_length_sf
 
 
 # Currently just an alias for a SinglePairLabel
 class RestrictionSite(SinglePairLabel):
-    def __init__(self, name: str, base_pair: int) -> None:
-        super().__init__(name, base_pair)
+    """
+    A class representing a restriction site on a plasmid as an extention of SinglePairLabel.
+    """
+    def __init__(self, text: str, base_pair: int) -> None:
+        """
+        Initializes the RestrictionSite object. Creating a label in the format "<text> (<base_pair>)". 
+        For more control over the label text, use SinglePairLabel.
+
+        Parameters
+        ----------
+        text : str
+            The text to display on the restiction site. e.g. "BspMI", "BfuAI, BspMI", "Multiple Cloning Site"
+        base_pair : int
+            The base pair position of the restriction site.
+        """
+        super().__init__(text, base_pair)
         self.set_label_text(f"{self.get_name()} ({self.get_base_pair()})")
 
 
 class CurvedMultiPairLabel(MultiPairFeature, LabelBase):
+    """
+    A class representing a curved label associated with multiple base pairs on a plasmid.
+    """
+
     SUPPORTED_CURVE_ALIGNMENTS: list[str] = ["bottom", "top"]
     # Set to either 'bottom' or 'top' to snap charecters to the bottom or top of the curve
     _alignment_to_curve: str = "bottom"
 
     def __init__(self, name: str, start_pair: int, end_pair: int) -> None:
+        """
+        Initializes the CurvedMultiPairLabel object.
+
+        Parameters
+        ----------
+        name : str
+            The name of the curved label.
+        start_pair : int
+            The starting base pair position of the label.
+        end_pair : int
+            The ending base pair position of the label.
+        """
         super().__init__(name, start_pair, end_pair)
         LabelBase.__init__(self, name)
 
     def _render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+        """
+        Renders the curved label on the plot.
+
+        Parameters
+        ----------
+        ax : Axes
+            The matplotlib Axes object.
+        p_total_base_pairs : int
+            The total number of base pairs.
+        p_center : tuple
+            The coordinates of the center of the plot.
+        p_radius : float
+            The radius of the plot.
+        p_line_width : float
+            The width of the line.
+        """
 
         start_radians = np.deg2rad((self.get_start_pair() / p_total_base_pairs) * 360)
         end_radians = np.deg2rad((self.get_end_pair() / p_total_base_pairs) * 360)
@@ -332,18 +711,54 @@ class CurvedMultiPairLabel(MultiPairFeature, LabelBase):
         )
 
     def set_curve_alignment(self, curve_align: str) -> None:
+        """
+        Sets the alignment of the curved label. i.e. does the text follow the bottom or top of the curve?
+        (use bottom for curves in the bottom half of the circle and top for the top half)
+
+        Parameters
+        ----------
+        curve_align : str
+            The alignment of the curved label ('bottom' or 'top').
+        """
         self._alignment_to_curve = curve_align
 
     def get_curve_alignment(self) -> str:
+        """
+        Returns the alignment of the curved label.
+
+        Returns
+        -------
+        str
+            The alignment of the curved label.
+        """
         return self._alignment_to_curve
 
 class RectangleFeature(MultiPairFeature):
+    """
+    A class representing a curved rectangular feature associated with multiple base pairs on a plasmid.
+    """
     # Center and radius for plotting the curved rectangle against plasmid circle
     radius: float
 
     line_width_scale_factor: float = 1
 
     def _render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+        """
+        Renders the rectangular feature on the plot.
+
+        Parameters
+        ----------
+        ax : Axes
+            The matplotlib Axes object.
+        p_total_base_pairs : int
+            The total number of base pairs.
+        p_center : tuple
+            The coordinates of the center of the plot.
+        p_radius : float
+            The radius of the plot.
+        p_line_width : float
+            The width of the line.
+        """
 
         # Creating a rectangle
         # =============================================
@@ -379,31 +794,104 @@ class RectangleFeature(MultiPairFeature):
                 label._render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
 
     def get_line_width_scale_factor(self) -> float:
+        """
+        Returns the scale factor for the width of the rectangle.
+
+        Returns
+        -------
+        float
+            The scale factor for the width of the rectangle.
+        """
         return self.line_width_scale_factor
 
     def set_line_width_scale_factor(self, sf: float) -> None:
+        """
+        Sets the scale factor for the width of the rectangle.
+
+        Parameters
+        ----------
+        sf : float
+            The scale factor for the width of the rectangle.
+        """
         self.line_width_scale_factor = sf
 
 class DirectionalMultiPairFeature(MultiPairFeature):
+    """
+    An abstract class representing a directional feature associated with multiple base pairs on a plasmid.
+    """
     direction: int = 1
 
     def __init__(self, name: str, start_pair: int, end_pair: int, direction: int = 1):
+        """
+        Initializes a directional multi-pair feature.
+
+        Parameters
+        ----------
+        name : str
+            The name of the feature.
+        start_pair : int
+            The start base pair.
+        end_pair : int
+            The end base pair.
+        direction : int, optional
+            The direction of the feature, either 1 for clockwise or -1 for anti-clockwise (default is 1).
+        """
         super().__init__(name, start_pair, end_pair)
         self.set_direction(direction)
 
     def get_direction(self) -> int:
+        """
+        Returns the direction of the feature.
+
+        Returns
+        -------
+        int
+            The direction of the feature. (1 for clockwise or -1 for anti-clockwise)
+        """
         return self.direction
 
     def set_direction(self, direction: int) -> None:
+        """
+        Sets the direction of the feature.
+
+        Parameters
+        ----------
+        direction : int
+            The direction of the feature, either 1 for clockwise or -1 for anti-clockwise.
+        
+        Raises
+        ------
+        ValueError
+            If direction is neither 1 or -1.
+        """
         if direction not in [1, -1]:
             raise ValueError(
                 f"{direction} is an invalid direction value. Direction can only be 1 (clockwise) or -1 (anti-clockwise)")
         self.direction = direction
 
 class ArrowFeature(DirectionalMultiPairFeature):
+    """
+    A class representing a curved arrow feature associated with multiple base pairs on a plasmid.
+    """
     line_width_scale_factor: float = 1
 
     def _render(self, ax: Axes, p_total_base_pairs: int, p_center, p_radius: float, p_line_width: float) -> None:
+        """
+        Renders the arrow feature on the provided axes.
+
+        Parameters
+        ----------
+        ax : Axes
+            The axes object on which to render the arrow.
+        p_total_base_pairs : int
+            The total number of base pairs on the plasmid.
+        p_center : tuple
+            The coordinates of the center of the plasmid.
+        p_radius : float
+            The radius of the plasmid.
+        p_line_width : float
+            The width of the line representing the plasmid.
+        """
 
         # NOTE - To clarify the mentions of "start" and "end" of an arrow
         # This side of the arrow is the "end" <| This side is the "start"
@@ -492,7 +980,24 @@ class ArrowFeature(DirectionalMultiPairFeature):
         rectangle._render(ax, p_total_base_pairs, p_center, p_radius, p_line_width)
 
     def get_line_width_scale_factor(self) -> float:
+        """
+        Returns the scale factor for the width of the arrow.
+
+        Returns
+        -------
+        float
+            The scale factor for the width of the arrow.
+        """
+
         return self.line_width_scale_factor
 
     def set_line_width_scale_factor(self, sf: float) -> None:
+        """
+        Sets the scale factor for the width of the arrow.
+
+        Parameters
+        ----------
+        sf : float
+            The scale factor to set.
+        """
         self.line_width_scale_factor = sf
