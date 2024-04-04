@@ -1,6 +1,6 @@
 # plasmidcanvas - A simple Python plasmid map creator
 
-INSTALLATION AND USAGE DOCUMENTATION -> https://plasmidcanvas.readthedocs.io/en/latest/ <-
+Installation, Usage and API referance, hosted on readthedocs **HERE ->** https://plasmidcanvas.readthedocs.io/en/latest/ **<-**
 
 plasmidcanvas is a Python graphics package designed for producing customised plasmid maps. 
 
