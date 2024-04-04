@@ -2,4 +2,4 @@
 
 plasmidcanvas is a python package to facilitate the creation of plasmid map illustrations.
 
-TODO - Add link to readthedocs
+DOCUMENTATION -> https://plasmidcanvas.readthedocs.io/en/latest/
