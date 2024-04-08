@@ -40,13 +40,9 @@ Prerequisites
 Installation
 ============
 
-1 - Open a command terminal (In windows, press 'windows key' + 'r' then enter '``cmd``' to open one)
+1 - Open a command prompt with admin privilages and run ``pip install plasmidcanvas```
 
-2 - Navigate to the plasmidcanvas folder from the zip (use ``cd path/to/the/folder``)
-
-3 - Run the following command to install the package:  ``pip install .``
-
-You now have the package installed! If you want to double check it has installed correctly then run ``pip list`` to verify plasmidcanvas is in the list
+2 - You now have the package installed! If you want to double check it has installed correctly then run ``pip list`` to verify plasmidcanvas is in the list
 
 Usage
 =====
