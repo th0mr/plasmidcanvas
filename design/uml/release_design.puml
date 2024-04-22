@@ -1,0 +1,121 @@
+@startuml plasmidcanvas_release_arch
+skinparam linetype polyline
+skinparam linetype ortho
+skinparam nodesep 50
+skinparam ranksep 50
+
+' =============================================================================
+' Plasmid
+
+
+class Plasmid {
+    base_pairs : int
+    name : string
+
+    _center : tuple[float, float]
+    _radius : float
+    _features : MutableSequence[Feature]
+
+    _plasmid_color : str
+    _plasmid_line_width : float
+    _plasmid_line_width_sf : float
+    _marker_style : str
+    _marker_distance_sf : float
+    _number_of_markers : int
+    _tick_style : str
+    _tick_color: str
+    _feature_label_font_size: int
+
+    plot()
+    render()
+    add_feature()
+    save_to_file()
+}
+
+Plasmid "1" *-down- "0..*" Feature
+
+' ============================================================================
+' Labelling
+
+class LabelBase {
+    label_text: str
+    font_color: str
+    font_size: int
+}
+
+SinglePairFeature <|-- SinglePairLabel
+LabelBase <|-- SinglePairLabel
+class SinglePairLabel {
+    line_length_sf: float
+    line_color: str
+    _orbit_ofset: int
+    render()
+}
+
+SinglePairLabel <|-- RestrictionSiteFeature
+class RestrictionSiteFeature {
+    render()
+}
+
+MultiPairFeature <|-- CurvedMultiPairLabel
+LabelBase <|-- CurvedMultiPairLabel
+class CurvedMultiPairLabel{
+    _alignment_to_curve: str
+    render()
+}
+
+
+' =============================================================================
+' Abstract feature types
+
+class Feature {
+    name: str
+    color : Color
+}
+
+MultiPairFeature "1" *- "1" LabelBase
+
+Feature <|-- MultiPairFeature
+
+class MultiPairFeature {
+    start_pair : int
+    end_pair : int
+    label_style : list[str]
+    _orbit: int
+    length()
+}
+
+Feature <|-- SinglePairFeature
+
+class SinglePairFeature {
+    base_pair : int
+}
+
+
+
+' =============================================================================
+' Concrete multi pair feature types
+
+' Contains the logic for wrapping a rectangular type of feature around a circle
+class RectangleFeature {
+    line_width_scale_factor: float
+    render()
+}
+
+MultiPairFeature <|-- RectangleFeature
+
+class DirectionalMultiPairFeature{
+    direction: int
+}    
+
+MultiPairFeature <|-- DirectionalMultiPairFeature
+
+class ArrowFeature {
+    line_width_scale_factor: float
+    render()
+}
+
+DirectionalMultiPairFeature <|-- ArrowFeature
+
+
+@enduml

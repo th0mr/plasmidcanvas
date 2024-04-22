@@ -737,8 +737,6 @@ class RectangleFeature(MultiPairFeature):
     """
     A class representing a curved rectangular feature associated with multiple base pairs on a plasmid.
     """
-    # Center and radius for plotting the curved rectangle against plasmid circle
-    radius: float
 
     line_width_scale_factor: float = 1
 

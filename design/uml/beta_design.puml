@@ -1,4 +1,4 @@
-@startuml plasmid_canvas_arch
+@startuml plasmidcanvas_beta_arch
 skinparam linetype polyline
 skinparam linetype ortho
 skinparam nodesep 50
